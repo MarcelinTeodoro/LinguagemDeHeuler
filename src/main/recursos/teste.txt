@@ -1,1 +1,26 @@
-(3)
+// Teste de todos os símbolos válidos
+( ) { }  - + ; * /
+
+! !=
+= ==
+< <=
+> >=
+
+//Teste de todos os símbolos invalidos
+@ # $
+? | & , .
+
+123.313
+32
+45.34
+3244.5432
+// Teste de literais
+var inteiro = 123;
+var decimal = 45.67;
+var acesso = 123.metodo(); // O ponto não deve ser parte do número
+
+var poema = "Eu sou uma string
+que ocupa múltiplas
+linhas.";
+
+var erro = "Esta string nunca fecha

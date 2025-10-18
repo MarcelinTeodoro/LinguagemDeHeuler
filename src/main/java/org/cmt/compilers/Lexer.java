@@ -59,8 +59,9 @@ public class Lexer {
                 makeToken(TokenType.Semicolon);
                 break;
             }
-            case '=': {
-                makeToken(TokenType.Equal);
+
+            case '.': {
+                makeToken(TokenType.Point);
                 break;
             }
 
@@ -100,9 +101,30 @@ public class Lexer {
             }
 
             case '/': {
-                makeToken(TokenType.Slash);
+                if (peek() == '/') {
+                    // É um comentário, então avance até o final da linha.(tratamento de comentario)
+                    while (!isAtEnd() && peek() != '\n') {
+                        advance();
+                    }
+                } else {
+                    // É apenas uma barra de divisão.
+                    makeToken(TokenType.Slash);
+                }
                 break;
             }
+
+            case '!':
+                makeToken(match('=') ? TokenType.BangEqual : TokenType.Bang);
+                break;
+            case '=':
+                makeToken(match('=') ? TokenType.EqualEqual : TokenType.Equal);
+                break;
+            case '<':
+                makeToken(match('=') ? TokenType.LessEqual : TokenType.Less);
+                break;
+            case '>':
+                makeToken(match('=') ? TokenType.GreaterEqual : TokenType.Greater);
+                break;
 
             case '"': {
                 string();
@@ -115,33 +137,48 @@ public class Lexer {
                 } else if (isAlpha(c)) {
                     identifier();
                 } else {
-                    throw new RuntimeException("Invalid character '" + c + "', at line " + line + ".");
+                    Heuler.error(line, "Caractere inválido.");
                 }
             }
         }
     }
 
     private void string() {
-        while(!isAtEnd() && peek() != '"') {
-            if(peek() == '\n') {
+        while (!isAtEnd() && peek() != '"') {
+            if (peek() == '\n') {
                 line++;
             }
             advance();
         }
 
-        if(peek() != '"') {
-            throw new RuntimeException("Unterminated string at line " + line);
+        if (isAtEnd()) {
+            Heuler.error(line, "String não terminada.");
+            return;
         }
 
+        // Consome as aspas de fechamento '"'
         advance();
 
+        // Extrai o valor da string sem as aspas
         String lexeme = source.substring(start + 1, end - 1);
         makeToken(TokenType.STRING, lexeme, lexeme);
     }
 
     private void number() {
-        while (!isAtEnd() && isDigit(peek()))
+        while (!isAtEnd() && isDigit(peek())) {
             advance();
+        }
+
+        // Verifica se há uma parte fracionária
+        if (peek() == '.' && isDigit(peekNext())) {
+            // Consome o "."
+            advance();
+
+            // Continua consumindo os dígitos após o ponto
+            while (!isAtEnd() && isDigit(peek())) {
+                advance();
+            }
+        }
 
         String lexeme = source.substring(this.start, this.end);
         Object literal = Double.parseDouble(lexeme);
@@ -188,10 +225,26 @@ public class Lexer {
 
         return c;
     }
+    private boolean match(char expected) {
+        if (isAtEnd()) {
+            return false;
+        }
+        if (source.charAt(end) != expected) {
+            return false;
+        }
+
+        end++;
+        return true;
+    }
 
     char peek() {
         if(isAtEnd()) return '\0';
         return this.source.charAt(this.end);
+    }
+
+    private char peekNext() {
+        if (end + 1 >= source.length()) return '\0';
+        return source.charAt(end + 1);
     }
 
     boolean isAlphanumeric(char c) {

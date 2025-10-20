@@ -1,0 +1,22 @@
+// Arquivo: teste_final.txt (versão final)
+
+var i = 0;
+print "Iniciando o laço:";
+
+while (i < 3) {
+  if (i == 1) {
+    print "i é um!";
+  } else {
+    print "i não é um...";
+  }
+  i = i + 1; // <-- AGORA USAMOS A ATRIBUIÇÃO CORRETA!
+}
+
+print "Fim do laço.";
+// A condição é: false OU true E false
+// O parser deve agrupar (true E false) primeiro.
+if (false or true and false) {
+  print "verdadeiro";
+} else {
+  print "falso";
+}

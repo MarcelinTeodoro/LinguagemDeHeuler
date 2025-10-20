@@ -21,6 +21,11 @@ public class Lexer {
         keywords.put("def", TokenType.Def);
         keywords.put("if", TokenType.If);
         keywords.put("else", TokenType.Else);
+        keywords.put("var",    TokenType.Var);
+        keywords.put("print",  TokenType.Print);
+        keywords.put("while",  TokenType.While);
+        keywords.put("and",  TokenType.And);
+        keywords.put("or",  TokenType.Or);
     }
 
     public Lexer() {
@@ -61,7 +66,7 @@ public class Lexer {
             }
 
             case '.': {
-                makeToken(TokenType.Point);
+                makeToken(TokenType.Dot);
                 break;
             }
 

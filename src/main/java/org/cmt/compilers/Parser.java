@@ -1,209 +1,315 @@
-/**
- * ---------------------------------------------------------------------------------
- * GUIA DE IMPLEMENTAÇÃO DO PARSER (ANALISADOR SINTÁTICO) - LINGUAGEM HEULER
- * ---------------------------------------------------------------------------------
- *
- * Olá, equipa! Este é o guia para continuarmos o desenvolvimento do nosso Parser.
- *
- * ## 1. Visão Geral
- * A missão desta classe (`Parser`) é receber uma sequência de tokens do `Lexer` e
- * transformá-la em uma estrutura de dados que represente a gramática do nosso
- * código. Essa estrutura é chamada de Árvore Sintática Abstrata (AST - Abstract Syntax Tree).
- *
- * ## 2. Estratégia de Implementação
- * Estamos a seguir a abordagem de um **Parser Descendente Recursivo** escrito manualmente.
- * Esta técnica é didática e nos dá total controle sobre o tratamento de erros.
- *
- * Nossa estratégia é dividida em duas partes, baseada no livro "Crafting Interpreters":
- *
- * a) Para ANÁLISE DE EXPRESSÕES (matemáticas, lógicas, etc.):
- * Usaremos a técnica de **"Top-Down Operator Precedence Parsing"**, também conhecida como
- * **Pratt Parser**. Esta abordagem é extremamente elegante para lidar com a
- * precedência de operadores (+, -, *, /) e associatividade, evitando a complexidade
- * de uma longa cadeia de funções para cada nível de precedência.
- * (Referência: "Crafting Interpreters", Capítulo 6 e 17).
- *
- * b) Para ANÁLISE DE DECLARAÇÕES E COMANDOS (`var`, `if`, `while`, etc.):
- * Usaremos o **Recursive Descent** padrão, onde cada tipo de declaração ou comando
- * terá sua própria função de parsing (ex: `declaration()`, `ifStatement()`, etc.).
- * (Referência: "Crafting Interpreters", Capítulos 8 e 9).
- *
- * ## 3. Gramática da Linguagem (Alvo)
- * Abaixo está a gramática que precisamos implementar, no formato EBNF:
- *
- * programa     → ( declaracao )* ( comando )* EOF ;
- *
- * // Declarações
- * declaracao   → varDecl | ... ;
- * varDecl      → tipo IDENTIFICADOR ";" ;
- * tipo         → "int" | "float" | "bool" ;
- *
- * // Comandos
- * comando      → atribuicao | condicional | repeticao | bloco | exprStmt ;
- * atribuicao   → IDENTIFICADOR "=" expressao ";" ;
- * condicional  → "if" "(" expressao ")" comando ( "else" comando )? ;
- * repeticao    → "while" "(" expressao ")" comando ;
- * bloco        → "{" ( declaracao | comando )* "}" ;
- * exprStmt     → expressao ";" ;
- *
- * // Expressões (com níveis de precedência do Pratt Parser)
- * expressao    → atribuicao ;
- * atribuicao   → IDENTIFICADOR "=" atribuicao | logica_ou ; // Associatividade à direita
- * logica_ou    → logica_e ( "or" logica_e )* ;
- * logica_e     → igualdade ( "and" igualdade )* ;
- * igualdade    → comparacao ( ( "!=" | "==" ) comparacao )* ;
- * comparacao   → termo ( ( ">" | ">=" | "<" | "<=" ) termo )* ;
- * termo        → fator ( ( "-" | "+" ) fator )* ;
- * fator        → unario ( ( "/" | "*" ) unario )* ;
- * unario       → ( "!" | "-" ) unario | primario ;
- * primario     → NUMERO | STRING | "true" | "false" | "nil" | IDENTIFICADOR
- * | "(" expressao ")" ;
- *
- * ## 4. Roadmap de Implementação
- *
- * 1. [FEITO] Estrutura base do Parser com `peek()`, `advance()`, `match()`.
- *
- * 2. [A FAZER] Implementar o Pratt Parser para expressões:
- * - Criar a `ParseRule`, uma estrutura ou classe para armazenar as funções de parsing
- * (prefix e infix) e a precedência de cada token.
- * - Criar a tabela de regras (`rules[]`).
- * - Implementar a função principal `parsePrecedence()`.
- * - Criar as funções de parsing para cada tipo de expressão (ex: `number()`, `grouping()`,
- * `unary()`, `binary()`).
- *
- * 3. [A FAZER] Implementar as funções de parsing para declarações e comandos:
- * - Criar as classes da AST para cada comando (ex: `IfStmt`, `WhileStmt`, `VarDecl`).
- * - Criar os métodos `declaration()` e `statement()`.
- * - Dentro de `statement()`, criar `ifStatement()`, `whileStatement()`, etc.
- *
- * 4. [A FAZER] Melhorar o tratamento de erros com "Panic Mode" (sincronização):
- * - Implementar um método `synchronize()` que avança os tokens até encontrar um
- * ponto seguro para recomeçar o parsing (ex: depois de um `;` ou antes de uma
- * palavra-chave como `if` ou `var`).
- *
- * Lembrem-se de consultar o "Crafting Interpreters" para exemplos de código e explicações
- * detalhadas. Bom trabalho!
- */
+
+// Arquivo: Parser.java (versão final corrigida com atribuição)
 package main.java.org.cmt.compilers;
 
 import main.java.org.cmt.compilers.expressions.*;
-import java.util.ArrayList;
+        import java.util.ArrayList;
 import java.util.List;
+import java.util.EnumMap;
 import static main.java.org.cmt.compilers.TokenType.*;
 
 public class Parser {
 
-    private int current;
-    private TokenStream tokens;
+    private static class ParseError extends RuntimeException {}
 
-    public List<Expression> parseTokens(TokenStream tokens) {
-        current = 0;
+    private final List<Token> tokens;
+    private int current = 0;
+    private final EnumMap<TokenType, ParseRule> rules;
+
+    public Parser(List<Token> tokens) {
         this.tokens = tokens;
+        this.rules = new EnumMap<>(TokenType.class);
+        initializeRules();
+    }
 
-        List<Expression> expressions = new ArrayList<>();
-
+    public List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
-            expressions.add(expression());
+            statements.add(declaration());
         }
-
-        return expressions;
+        return statements;
     }
 
-    Expression expression() {
-        return factor();
+
+    // --- PONTO DE ENTRADA PARA EXPRESSÕES ---
+    private Expr expression() {
+        return assignment(); // A atribuição é o nível mais baixo de precedência
     }
 
-    private Expression factor() {
-        Expression left = term();
+    // --- LÓGICA DE PARSING ---
 
-        if(match(Plus, Minus)) {
-            Token operator = previous();
-            Expression right = factor();
-            left = new BinaryExpression(left, operator, right);
-        }
-
-        return left;
+    private Stmt declaration() {
+        if (match(Var)) return varDeclaration();
+        return statement();
     }
 
-    private Expression term() {
-        Expression left = unary();
-
-        if(match(Star, Slash)) {
-            Token operator = previous();
-            Expression right = term();
-            left = new BinaryExpression(left, operator, right);
-        }
-
-        return left;
+    private Stmt statement() {
+        if (match(Print)) return printStatement();
+        if (match(LeftBrace)) return new Stmt.Block(block());
+        if (match(If)) return ifStatement();
+        if (match(While)) return whileStatement();
+        return expressionStatement();
     }
 
-    private Expression unary() {
-        Expression expr = null;
+    // NOVO MÉTODO DE ATRIBUIÇÃO
+    private Expr assignment() {
+        // Analisa o lado esquerdo da expressão.
+        // Ele pode ser um simples nome de variável ou algo mais complexo.
+        Expr expr = parsePrecedence(Precedence.OR); // Analisa uma expressão com precedência a partir de 'OR'
 
-        if(match(Minus)) {
-            Token operator = previous();
-            expr = new UnaryExpression(operator, unary());
-        } else {
-            return literal();
+        if (match(Equal)) {
+            Token equals = previous();
+            // Chamada recursiva a 'assignment()' para garantir a associatividade à direita.
+            Expr value = assignment();
+
+            // Verifica se o lado esquerdo é um alvo válido para atribuição.
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                return new Expr.Assign(name, value);
+            }
+
+            // Se não for, é um erro de sintaxe.
+            error(equals, "Alvo de atribuição inválido.");
         }
 
         return expr;
     }
 
-    private Expression literal() {
-        if(match(STRING, Number)) {
-            return new LiteralExpression(previous());
+    private Stmt varDeclaration() {
+        Token name = consume(Identifier, "Esperava um nome de variável.");
+        Expr initializer = null;
+        if (match(Equal)) {
+            initializer = expression();
+        }
+        consume(Semicolon, "Esperava ';' depois da declaração da variável.");
+        return new Stmt.Var(name, initializer);
+    }
+    // Para o comando de impressão: print expressao;
+    private Stmt printStatement() {
+        Expr value = expression();
+        consume(Semicolon, "Esperava ';' depois do valor.");
+        return new Stmt.Print(value);
+    }
+    private Stmt ifStatement() {
+        consume(LeftParen, "Esperava '(' depois de 'if'.");
+        Expr condition = expression();
+        consume(RightParen, "Esperava ')' depois da condição do if.");
+
+        Stmt thenBranch = statement();
+        Stmt elseBranch = null;
+        if (match(Else)) {
+            elseBranch = statement();
         }
 
-        if(match(LeftParen)) {
-            return group();
+        return new Stmt.If(condition, thenBranch, elseBranch);
+    }
+
+    private Stmt whileStatement() {
+        consume(LeftParen, "Esperava '(' depois de 'while'.");
+        Expr condition = expression();
+        consume(RightParen, "Esperava ')' depois da condição do while.");
+        Stmt body = statement();
+
+        return new Stmt.While(body, condition);
+    }
+    // ... Seus outros métodos de statement (printStatement, ifStatement, etc.) estão corretos ...
+    private Stmt expressionStatement() {
+        Expr expr = expression();
+        consume(Semicolon, "Esperava ';' depois da expressão.");
+        return new Stmt.Expression(expr);
+    }
+
+    // Para um bloco de código: { ... }
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+
+        while (!check(RightBrace) && !isAtEnd()) {
+            statements.add(declaration());
         }
 
-        throw new RuntimeException("Invalid literal kind: '" + previous().lexeme + "'. At line " + previous().line);
+        consume(RightBrace, "Esperava '}' para fechar o bloco.");
+        return statements;
     }
 
-    private Expression group() {
-        Expression expr = expression();
 
-        consume(RightParen, "Expect ')' after group expression.");
 
-        return new GroupExpression(expr);
-    }
+    // --- PRATT PARSER E FUNÇÕES DE EXPRESSÃO ---
 
-    boolean consume(TokenType type, String message) {
-        if(match(type)) {
-            return true;
+    private Expr parsePrecedence(Precedence precedence) {
+        advance();
+        PrefixParseFn prefixRule = getRule(previous().type).prefix;
+        if (prefixRule == null) {
+            throw error(previous(), "Esperava uma expressão.");
         }
 
-        throw new RuntimeException(message);
+        Expr left = prefixRule.call();
+
+        while (!isAtEnd()) {
+            ParseRule rule = getRule(peek().type);
+            if (rule == null || rule.infix == null || precedence.ordinal() > rule.precedence.ordinal()) {
+                break;
+            }
+
+            advance();
+            InfixParseFn infixRule = rule.infix;
+            left = infixRule.call(left);
+        }
+
+        return left;
+    }
+    // Métodos de parsing (por enquanto, podem ser esqueletos)
+    private Expr number()     {
+        double value = Double.parseDouble(previous().lexeme);
+        return new Expr.Literal(value);
     }
 
-    Token previous() {
-        return this.tokens.getTokens().get(current - 1);
+    private Expr variable() {
+        // A ser implementado: analisa uma variável.
+        return new Expr.Variable(previous());
     }
 
-    boolean match(TokenType... types) {
-        for(TokenType t: types) {
-            if(peek().type == t) {
+    private Expr string() {
+        // Analisa um literal de string.
+        return new Expr.Literal(previous().literal);
+    }
+
+    private Expr literal() {
+        switch (previous().type) {
+            case True: return new Expr.Literal(true);
+            case False: return new Expr.Literal(false);
+            case Nil: return new Expr.Literal(null); // Usando null do Java para representar nil
+            case STRING:
+                // O valor literal já foi extraído pelo Lexer.
+                // Se não, você precisaria extraí-lo aqui.
+                return new Expr.Literal(previous().literal);
+            default:
+                // Inalcançável, mas bom para robustez
+                return null;
+        }
+    }
+
+    private Expr grouping()   {
+        // Os parênteses de abertura já foram consumidos.
+        // Agora, analisamos a expressão dentro deles.
+        Expr expression = expression();
+
+        // Exigimos que o próximo token seja um parêntese de fechamento.
+        consume(RightParen, "Esperava ')' depois da expressão.");
+
+        return new Expr.Grouping(expression);
+    }
+    private Expr unary()     {
+        Token operator = previous();
+
+        // Analisa o operando (a expressão à direita do operador).
+        // Usamos a precedência UNARY para lidar com casos como "!!true".
+        Expr right = parsePrecedence(Precedence.UNARY);
+
+        return new Expr.Unary(operator, right);
+    }
+    private Expr binary(Expr left) {
+        // O operador já foi consumido.
+        Token operator = previous();
+
+        // Pega a regra do operador para saber sua precedência.
+        ParseRule rule = getRule(operator.type);
+
+        // Analisa o operando da direita. A precedência passada é um nível acima
+        // para lidar corretamente com a associatividade à esquerda.
+        Expr right = parsePrecedence(Precedence.values()[rule.precedence.ordinal() + 1]);
+
+        return new Expr.Binary(left, operator, right);
+    }
+    private Expr logical(Expr left) {
+        Token operator = previous();
+        ParseRule rule = getRule(operator.type);
+        Expr right = parsePrecedence(Precedence.values()[rule.precedence.ordinal() + 1]);
+        return new Expr.Logical(left, operator, right);
+    }
+
+
+
+
+
+    // --- TABELA DE REGRAS E MÉTODOS AUXILIARES ---
+
+    private void initializeRules() {
+        // Adicione esta linha para evitar NullPointerException em tokens não mapeados
+        rules.put(EndOfFile, new ParseRule(null, null, Precedence.NONE));
+
+        // Parênteses e Símbolos
+        rules.put(LeftParen,  new ParseRule(this::grouping, null, Precedence.NONE)); // 'call' seria a função infixa
+        rules.put(RightParen, new ParseRule(null, null, Precedence.NONE));
+        rules.put(LeftBrace,  new ParseRule(null, null, Precedence.NONE));
+        rules.put(RightBrace, new ParseRule(null, null, Precedence.NONE));
+        rules.put(Comma,      new ParseRule(null, null, Precedence.NONE));
+        rules.put(Dot,        new ParseRule(null, null, Precedence.NONE)); // 'dot' seria a função infixa
+        rules.put(Semicolon,  new ParseRule(null, null, Precedence.NONE));
+        rules.put(Equal,      new ParseRule(null, null, Precedence.NONE)); // Tratado manualmente em 'assignment'
+
+        // Operadores
+        rules.put(Minus, new ParseRule(this::unary, this::binary, Precedence.TERM));
+        rules.put(Plus,  new ParseRule(null, this::binary, Precedence.TERM));
+        rules.put(Star,  new ParseRule(null, this::binary, Precedence.FACTOR));
+        rules.put(Slash, new ParseRule(null, this::binary, Precedence.FACTOR));
+        rules.put(And, new ParseRule(null, this::logical, Precedence.AND));
+        rules.put(Or,  new ParseRule(null, this::logical, Precedence.OR));
+
+        // Operador Unário
+        rules.put(Bang, new ParseRule(this::unary, null, Precedence.NONE));
+
+        // Operadores de Comparação e Igualdade
+        rules.put(BangEqual,    new ParseRule(null, this::binary, Precedence.EQUALITY));
+        rules.put(EqualEqual,   new ParseRule(null, this::binary, Precedence.EQUALITY));
+        rules.put(Greater,      new ParseRule(null, this::binary, Precedence.COMPARISON));
+        rules.put(GreaterEqual, new ParseRule(null, this::binary, Precedence.COMPARISON));
+        rules.put(Less,         new ParseRule(null, this::binary, Precedence.COMPARISON));
+        rules.put(LessEqual,    new ParseRule(null, this::binary, Precedence.COMPARISON));
+
+
+
+        // Literais e Variáveis
+        rules.put(Identifier, new ParseRule(this::variable, null, Precedence.NONE));
+        rules.put(STRING,     new ParseRule(this::string,   null, Precedence.NONE));
+        rules.put(Number,     new ParseRule(this::number,   null, Precedence.NONE));
+        rules.put(True,       new ParseRule(this::literal,  null, Precedence.NONE));
+        rules.put(False,      new ParseRule(this::literal,  null, Precedence.NONE));
+        rules.put(Nil,        new ParseRule(this::literal,  null, Precedence.NONE));
+
+    }
+
+    private ParseRule getRule(TokenType type) { return rules.get(type); }
+    private boolean check(TokenType type) {
+        if (isAtEnd()) return false;
+        return peek().type == type;
+    }
+
+    // MÉTODO 'consume' CORRIGIDO
+    private Token consume(TokenType type, String message) {
+        if (check(type)) return advance();
+        throw error(peek(), message);
+    }
+
+    private ParseError error(Token token, String message) {
+        Heuler.error(token.line, message); // Usa o sistema de erro central
+        return new ParseError();
+    }
+    private boolean match(TokenType... types) {
+        for (TokenType type : types) {
+            if (check(type)) {
                 advance();
                 return true;
             }
         }
-
         return false;
     }
 
-    Token peek() {
-        return this.tokens.getTokens().get(current);
+    private Token advance() {
+        if (!isAtEnd()) current++;
+        return previous(); // Retorna o token anterior (consumido)
     }
 
-    Token advance() {
-        Token current = peek();
-        this.current++;
-        return current;
-    }
-
-    boolean isAtEnd() {
-        return this.current >= this.tokens.getTokens().size() - 1;
-    }
+    private boolean isAtEnd() { return peek().type == EndOfFile; }
+    private Token peek() { return tokens.get(current); }
+    private Token previous() { return tokens.get(current - 1); }
 }

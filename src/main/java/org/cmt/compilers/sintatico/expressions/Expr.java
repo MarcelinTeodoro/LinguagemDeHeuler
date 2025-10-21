@@ -3,6 +3,13 @@ package main.java.org.cmt.compilers.sintatico.expressions;
 import main.java.org.cmt.compilers.lexico.Token;
 import java.util.List;
 
+/**
+ * Hierarquia de nós de expressão (AST). Cada nó implementa `accept` para o
+ * Visitor, permitindo que visitantes (por exemplo AstPrinter) processem a árvore.
+ *
+ * Nós incluídos: Binary, Unary, Literal, Grouping, Variable, Assign, Logical,
+ * Call, Get, Set, This, Super.
+ */
 public abstract class Expr {
 
     public interface Visitor<R> {

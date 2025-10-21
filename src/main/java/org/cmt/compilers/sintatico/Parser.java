@@ -8,14 +8,25 @@ import java.util.List;
 import java.util.EnumMap;
 import static main.java.org.cmt.compilers.lexico.TokenType.*;
 
+/**
+ * Parser implementado no estilo Pratt para expressões, com parsing manual para
+ * declarações e comandos. Produz uma lista de `Stmt` (programa) a partir da
+ * lista de tokens fornecida pelo lexer.
+ *
+ * Estrutura principal:
+ * - tabela `rules` (ParseRule) para resolver prefix/infix por precedência
+ * - métodos top-level para declarações/comandos (declaration, statement)
+ * - método `parsePrecedence` para análise de expressões por precedência
+ */
 public class Parser {
 
+    /** Exceção interna usada para controle de fluxo em erros de parsing. */
     private static class ParseError extends RuntimeException {}
 
     private final List<Token> tokens;
     private int current = 0;
     private final EnumMap<TokenType, ParseRule> rules;
-    private boolean panicMode = false;
+    private boolean panicMode = false; // usado para evitar mensagens de erro repetidas
 
 
     public Parser(List<Token> tokens) {
@@ -24,6 +35,9 @@ public class Parser {
         initializeRules();
     }
 
+    /**
+     * Entry point: percorre os tokens e constrói a lista de declarações/stmt.
+     */
     public List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
@@ -32,13 +46,18 @@ public class Parser {
         return statements;
     }
 
-    // --- PONTO DE ENTRADA PARA EXPRESSÕES ---
+    // --- EXPRESSÕES (nível de expressão) ---
+
+    /** Inicia o parsing de uma expressão (atribuições têm a menor precedência). */
     private Expr expression() {
         return assignment(); // A atribuição é o nível mais baixo de precedência
     }
 
-    // --- LÓGICA DE PARSING ---
+    // --- DECLARAÇÕES E COMANDOS ---
 
+    /**
+     * Parsing de declaração. Em caso de erro, sincroniza e continua.
+     */
     private Stmt declaration() {
         try {
             if (match(Var)) return varDeclaration();
@@ -49,6 +68,7 @@ public class Parser {
         }
     }
 
+    /** Dispatch para diferentes tipos de statements. */
     private Stmt statement() {
         if (match(Print)) return printStatement();
         if (match(LeftBrace)) return new Stmt.Block(block());
@@ -57,6 +77,9 @@ public class Parser {
         return expressionStatement();
     }
 
+    /**
+     * Trata atribuições com associatividade à direita: a = b = 3
+     */
     private Expr assignment() {
         Expr expr = parsePrecedence(Precedence.OR);
 
@@ -75,6 +98,7 @@ public class Parser {
         return expr;
     }
 
+    /** Parse de declaração `var` (var nome = expr;). */
     private Stmt varDeclaration() {
         Token name = consume(Identifier, "Esperava um nome de variável.");
         Expr initializer = null;
@@ -90,6 +114,8 @@ public class Parser {
         consume(Semicolon, "Esperava ';' depois do valor.");
         return new Stmt.Print(value);
     }
+
+    /** if (cond) thenBranch [else elseBranch] */
     private Stmt ifStatement() {
         consume(LeftParen, "Esperava '(' depois de 'if'.");
         Expr condition = expression();
@@ -130,8 +156,12 @@ public class Parser {
         return statements;
     }
 
-    // --- PRATT PARSER E FUNÇÕES DE EXPRESSÃO ---
+    // --- PRATT: parsing de expressões por precedência ---
 
+    /**
+     * Núcleo do Pratt parser: consome uma função prefix e depois aplica as
+     * regras infix enquanto a precedência permitir.
+     */
     private Expr parsePrecedence(Precedence precedence) {
         advance();
         PrefixParseFn prefixRule = getRule(previous().type).prefix;
@@ -155,6 +185,7 @@ public class Parser {
         return left;
     }
 
+    // Funções construtoras de nós de expressão (numeros, strings, variáveis, agrupamento, etc.)
     private Expr number()     {
         double value = Double.parseDouble(previous().lexeme);
         return new Expr.Literal(value);
@@ -205,6 +236,7 @@ public class Parser {
 
     // --- TABELA DE REGRAS E MÉTODOS AUXILIARES ---
 
+    /** Inicializa a tabela de ParseRule que mapeia tokens para funções prefix/infix. */
     private void initializeRules() {
         rules.put(TokenType.EndOfFile, new ParseRule(null, null, Precedence.NONE));
 
@@ -243,16 +275,20 @@ public class Parser {
     }
 
     private ParseRule getRule(TokenType type) { return rules.get(type); }
+
+    /** Verifica se o token atual tem o tipo informado (sem consumi-lo). */
     private boolean check(TokenType type) {
         if (isAtEnd()) return false;
         return peek().type == type;
     }
 
+    /** Consome um token do tipo esperado ou lança erro com a mensagem informada. */
     private Token consume(TokenType type, String message) {
         if (check(type)) return advance();
         throw error(peek(), message);
     }
 
+    /** Reporta erro de parsing formatado e entra em modo de pânico para evitar ruído. */
     private ParseError error(Token token, String message) {
         if (!panicMode) {  
             main.java.org.cmt.compilers.Heuler.error(token, message);
@@ -260,6 +296,8 @@ public class Parser {
         }
         return new ParseError();
     }
+
+    /** Tenta recuperar do erro atual avançando até um ponto seguro (synchronize). */
     private void synchronize() {
         panicMode = false; 
 
@@ -293,6 +331,7 @@ public class Parser {
         return false;
     }
 
+    /** Consome e retorna o token atual, movendo o cursor adiante. */
     private Token advance() {
         if (!isAtEnd()) current++;
         return previous(); 

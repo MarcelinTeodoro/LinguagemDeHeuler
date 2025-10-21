@@ -1,6 +1,10 @@
 package main.java.org.cmt.compilers.sintatico;
 
-// Define os níveis de precedência, do mais baixo para o mais alto.
+/**
+ * Níveis de precedência usados pelo Pratt parser. Ordenados do mais baixo
+ * (NONE) para o mais alto (PRIMARY). Utilizados para controlar quando a
+ * análise deve retornar para níveis superiores.
+ */
 public enum Precedence {
     NONE,
     ASSIGNMENT,  // =

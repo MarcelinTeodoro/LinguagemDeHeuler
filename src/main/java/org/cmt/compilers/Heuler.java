@@ -14,12 +14,22 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
+/**
+ * Ponto de entrada do programa. Coordena as três fases simples demonstradas
+ * neste projeto:
+ * 1) Análise léxica (lexer/scan)
+ * 2) Análise sintática (parser -> AST)
+ * 3) Impressão/visualização da AST (AstPrinter)
+ *
+ * Também contém um mecanismo simples de report de erros (linha + mensagem).
+ */
 public class Heuler {
 
     static boolean hadError = false;
 
     public static void main(String[] args) throws IOException {
 
+        // Para depuração, o runner padrão lê o arquivo de recursos de teste.
         runFile("src/main/recursos/teste3.txt");
     }
 
@@ -29,18 +39,19 @@ public class Heuler {
         if (hadError) System.exit(65);
     }
 
+    /**
+     * Fluxo principal: tokeniza, parseia e imprime a AST.
+     */
     private static void run(String source) {
-    // Fase 1: Análise Léxica (Scanner)
-    Lexer lexer = new Lexer();
-    TokenStream tokenStream = lexer.scanTokens(source);
-    List<Token> tokens = tokenStream.getTokens();
+        // Fase 1: Análise Léxica (Scanner)
+        Lexer lexer = new Lexer();
+        TokenStream tokenStream = lexer.scanTokens(source);
+        List<Token> tokens = tokenStream.getTokens();
 
-       // if (hadError) return;
-
-        // --- BLOCO DE CÓDIGO ADICIONADO ---
+        // Exibe tabela de tokens (útil para debugging)
         System.out.println("--- Tabela de Tokens ---");
         for (Token token : tokens) {
-            // Usamos printf para formatar a saída em colunas alinhadas
+            // Imprime linha, tipo e lexema de forma legível
             System.out.printf("Linha %-4d | %-15s | Lexema: '%s'\n",
                     token.line,
                     token.type,
@@ -50,22 +61,18 @@ public class Heuler {
             }
         }
         System.out.println("------------------------\n");
-        // --- FIM DO BLOCO ADICIONADO ---
-
 
         // Fase 2: Análise Sintática (Parser)
-    Parser parser = new Parser(tokens);
-    List<Stmt> statements = parser.parse();
-
-        // Comentado para depuração, como discutimos
-        // if (hadError) return;
+        Parser parser = new Parser(tokens);
+        List<Stmt> statements = parser.parse();
 
         // Fase 3: Visualização da AST
         System.out.println("--- Árvore Sintática Gerada ---");
         System.out.println(new AstPrinter().print(statements));
     }
 
-    // Sistema de notificação de erros...
+    // Sistema de notificação de erros: fornece mensagens com número de linha
+    // e lexema (quando disponível). Marca `hadError` para controle externo.
     public static void error(Token token, String message) {
         if (token.type == TokenType.EndOfFile) {
             report(token.line, " no final", message);
@@ -73,6 +80,7 @@ public class Heuler {
             report(token.line, " em '" + token.lexeme + "'", message);
         }
     }
+
     public static void error(int line, String message) {
         report(line, "", message);
     }

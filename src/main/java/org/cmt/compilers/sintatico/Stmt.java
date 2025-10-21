@@ -3,6 +3,13 @@ package main.java.org.cmt.compilers.sintatico;
 import main.java.org.cmt.compilers.sintatico.expressions.Expr;
 import java.util.List;
 
+/**
+ * Hierarquia de instruções/declarações (Stmt) para a linguagem. Cada nó possui
+ * um método `accept` para o Visitor que permite processar a AST de forma
+ * separada da sua estrutura de dados.
+ *
+ * Nós incluídos: Block, Expression, Print, Var, If, While.
+ */
 public abstract class Stmt {
 
     public interface Visitor<R> {

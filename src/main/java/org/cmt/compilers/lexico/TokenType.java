@@ -1,5 +1,15 @@
 package main.java.org.cmt.compilers.lexico;
-// Arquivo: TokenType.java (versão completa)
+
+/**
+ * Enumeração de todos os tipos de tokens que a linguagem reconhece.
+ *
+ * Os valores incluem:
+ * - tokens simples (parênteses, chaves, operadores)
+ * - tokens compostos (==, !=, <=, >=)
+ * - literais (identificadores, strings, números)
+ * - palavras-reservadas (and, or, if, while, etc.)
+ * - token de fim de arquivo
+ */
 public enum TokenType {
     // Tokens de um único caractere
     LeftParen, RightParen, LeftBrace, RightBrace,
@@ -18,7 +28,7 @@ public enum TokenType {
     And, Class, Else, False, Fun, For, If, Nil, Or,
     Print, Return, Super, This, True, Var, While,
 
-    // Suas palavras-reservadas
+    // Palavras específicas da linguagem
     Def, Let,
 
     // Fim do arquivo

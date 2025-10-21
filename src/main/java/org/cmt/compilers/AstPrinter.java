@@ -6,20 +6,25 @@ import main.java.org.cmt.compilers.sintatico.Stmt;
 import main.java.org.cmt.compilers.lexico.Token;
 import java.util.List;
 
+/**
+ * Visitante que converte a AST (Expr/Stmt) em uma representação textual
+ * parenthesizada. Útil para debug e para verificar se o parsing produziu a
+ * árvore esperada.
+ */
 public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
     // --- MÉTODOS DE ENTRADA ---
 
-    // Método principal para imprimir uma única expressão
+    // Imprime uma única expressão
     public String print(Expr expr) {
         return expr.accept(this);
     }
 
-    // Novo método para imprimir uma lista de comandos (um programa)
+    // Imprime uma sequência de declarações/stmt (um programa)
     public String print(List<Stmt> statements) {
         StringBuilder builder = new StringBuilder();
         for (Stmt stmt : statements) {
-            // CORREÇÃO: Verifique se o comando não é nulo antes de tentar imprimi-lo.
+            // Protege contra declarações nulas (ocorrem após recovery de erro)
             if (stmt != null) {
                 builder.append(stmt.accept(this)).append("\n");
             }
@@ -60,7 +65,7 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         return parenthesize("= " + expr.name.lexeme, expr.value);
     }
 
-    // Métodos para funcionalidades futuras (para o código compilar)
+    // Métodos auxiliares para nós ainda não totalmente suportados
     @Override public String visitCallExpr(Expr.Call expr) { return "(call)"; }
     @Override public String visitGetExpr(Expr.Get expr) { return "(get)"; }
     @Override public String visitLogicalExpr(Expr.Logical expr) { return parenthesize(expr.operator.lexeme, expr.left, expr.right); }
@@ -76,7 +81,7 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
         builder.append("(block");
 
         for (Stmt statement : stmt.statements) {
-            // CORREÇÃO: Verifique se o comando não é nulo antes de processá-lo.
+            // Proteção contra stmts nulos (recuperação de erro)
             if (statement != null) {
                 builder.append("\n  ");
                 String stmtStr = statement.accept(this);

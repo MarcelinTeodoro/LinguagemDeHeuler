@@ -1,4 +1,4 @@
-package main.java.org.cmt.compilers;
+package main.java.org.cmt.compilers.lexico;
 
 import java.util.List;
 

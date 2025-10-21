@@ -1,6 +1,6 @@
-package main.java.org.cmt.compilers;
+package main.java.org.cmt.compilers.lexico;
 
-
+import main.java.org.cmt.compilers.Heuler;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,12 +9,11 @@ import java.util.Map;
 public class Lexer {
     private int start;
     private int end;
-    private char current;
     private int line;
     private String source;
     private List<Token> tokens;
 
-    private static Map<String, TokenType> keywords = new HashMap<String, TokenType>();
+    private static Map<String, TokenType> keywords = new HashMap<>();
 
     static {
         keywords.put("let", TokenType.Let);
@@ -29,7 +28,7 @@ public class Lexer {
     }
 
     public Lexer() {
-        this.tokens = new ArrayList<Token>();
+        this.tokens = new ArrayList<>();
     }
 
     public TokenStream scanTokens(String source) {
@@ -80,43 +79,35 @@ public class Lexer {
                 break;
             }
 
-            case '(': {
+            case '(':
                 makeToken(TokenType.LeftParen);
                 break;
-            }
 
-            case ')': {
+            case ')':
                 makeToken(TokenType.RightParen);
                 break;
-            }
 
-            case '-': {
+            case '-':
                 makeToken(TokenType.Minus);
                 break;
-            }
 
-            case '+': {
+            case '+':
                 makeToken(TokenType.Plus);
                 break;
-            }
 
-            case '*': {
+            case '*':
                 makeToken(TokenType.Star);
                 break;
-            }
 
-            case '/': {
+            case '/':
                 if (peek() == '/') {
-                    // É um comentário, então avance até o final da linha.(tratamento de comentario)
                     while (!isAtEnd() && peek() != '\n') {
                         advance();
                     }
                 } else {
-                    // É apenas uma barra de divisão.
                     makeToken(TokenType.Slash);
                 }
                 break;
-            }
 
             case '!':
                 makeToken(match('=') ? TokenType.BangEqual : TokenType.Bang);
@@ -161,10 +152,8 @@ public class Lexer {
             return;
         }
 
-        // Consome as aspas de fechamento '"'
         advance();
 
-        // Extrai o valor da string sem as aspas
         String lexeme = source.substring(start + 1, end - 1);
         makeToken(TokenType.STRING, lexeme, lexeme);
     }
@@ -174,12 +163,9 @@ public class Lexer {
             advance();
         }
 
-        // Verifica se há uma parte fracionária
         if (peek() == '.' && isDigit(peekNext())) {
-            // Consome o "."
             advance();
 
-            // Continua consumindo os dígitos após o ponto
             while (!isAtEnd() && isDigit(peek())) {
                 advance();
             }

@@ -1,7 +1,13 @@
 // Arquivo: Heuler.java
 package main.java.org.cmt.compilers;
 
-import main.java.org.cmt.compilers.expressions.Expr;
+import main.java.org.cmt.compilers.lexico.Lexer;
+import main.java.org.cmt.compilers.lexico.TokenStream;
+import main.java.org.cmt.compilers.lexico.Token;
+import main.java.org.cmt.compilers.lexico.TokenType;
+import main.java.org.cmt.compilers.sintatico.Parser;
+import main.java.org.cmt.compilers.sintatico.Stmt;
+import main.java.org.cmt.compilers.AstPrinter;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -24,10 +30,10 @@ public class Heuler {
     }
 
     private static void run(String source) {
-        // Fase 1: Análise Léxica (Scanner)
-        Lexer lexer = new Lexer();
-        TokenStream tokenStream = lexer.scanTokens(source);
-        List<Token> tokens = tokenStream.getTokens();
+    // Fase 1: Análise Léxica (Scanner)
+    Lexer lexer = new Lexer();
+    TokenStream tokenStream = lexer.scanTokens(source);
+    List<Token> tokens = tokenStream.getTokens();
 
        // if (hadError) return;
 
@@ -48,8 +54,8 @@ public class Heuler {
 
 
         // Fase 2: Análise Sintática (Parser)
-        Parser parser = new Parser(tokens);
-        List<Stmt> statements = parser.parse();
+    Parser parser = new Parser(tokens);
+    List<Stmt> statements = parser.parse();
 
         // Comentado para depuração, como discutimos
         // if (hadError) return;
@@ -60,14 +66,14 @@ public class Heuler {
     }
 
     // Sistema de notificação de erros...
-    static void error(Token token, String message) {
+    public static void error(Token token, String message) {
         if (token.type == TokenType.EndOfFile) {
             report(token.line, " no final", message);
         } else {
             report(token.line, " em '" + token.lexeme + "'", message);
         }
     }
-    static void error(int line, String message) {
+    public static void error(int line, String message) {
         report(line, "", message);
     }
 

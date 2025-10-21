@@ -1,7 +1,9 @@
 // Arquivo: AstPrinter.java (versão final e completa)
 package main.java.org.cmt.compilers;
 
-import main.java.org.cmt.compilers.expressions.Expr;
+import main.java.org.cmt.compilers.sintatico.expressions.Expr;
+import main.java.org.cmt.compilers.sintatico.Stmt;
+import main.java.org.cmt.compilers.lexico.Token;
 import java.util.List;
 
 public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {

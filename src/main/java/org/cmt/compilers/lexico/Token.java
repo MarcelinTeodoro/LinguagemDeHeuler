@@ -1,6 +1,4 @@
-package main.java.org.cmt.compilers;
-
-
+package main.java.org.cmt.compilers.lexico;
 
 public class Token {
     public String lexeme;

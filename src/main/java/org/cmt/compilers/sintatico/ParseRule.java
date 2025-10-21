@@ -1,7 +1,6 @@
-// Arquivo: ParseRule.java
-package main.java.org.cmt.compilers;
+package main.java.org.cmt.compilers.sintatico;
 
-import main.java.org.cmt.compilers.expressions.Expr;
+import main.java.org.cmt.compilers.sintatico.expressions.Expr;
 
 class ParseRule {
     final PrefixParseFn prefix;

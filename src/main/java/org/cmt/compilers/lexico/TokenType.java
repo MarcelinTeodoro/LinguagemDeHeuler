@@ -1,4 +1,4 @@
-package main.java.org.cmt.compilers;
+package main.java.org.cmt.compilers.lexico;
 // Arquivo: TokenType.java (versão completa)
 public enum TokenType {
     // Tokens de um único caractere

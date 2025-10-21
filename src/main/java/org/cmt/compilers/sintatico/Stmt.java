@@ -19,6 +19,7 @@ public abstract class Stmt {
         R visitVarStmt(Var stmt);
         R visitIfStmt(If stmt);
         R visitWhileStmt(While stmt);
+        R visitForStmt(For stmt);
     }
 
     public abstract <R> R accept(Visitor<R> visitor);
@@ -64,10 +65,12 @@ public abstract class Stmt {
 
     public static class Var extends Stmt {
         public final main.java.org.cmt.compilers.lexico.Token name;
+        public final main.java.org.cmt.compilers.lexico.Token typeToken; // optional type annotation
         public final Expr initializer;
 
-        public Var(main.java.org.cmt.compilers.lexico.Token name, Expr initializer) {
+        public Var(main.java.org.cmt.compilers.lexico.Token name, main.java.org.cmt.compilers.lexico.Token typeToken, Expr initializer) {
             this.name = name;
+            this.typeToken = typeToken;
             this.initializer = initializer;
         }
 
@@ -91,6 +94,23 @@ public abstract class Stmt {
         @Override
         public <R> R accept(Visitor<R> visitor) {
             return visitor.visitIfStmt(this);
+        }
+    }
+
+    public static class For extends Stmt {
+        public final main.java.org.cmt.compilers.lexico.Token iterator;
+        public final Expr iterable;
+        public final Stmt body;
+
+        public For(main.java.org.cmt.compilers.lexico.Token iterator, Expr iterable, Stmt body) {
+            this.iterator = iterator;
+            this.iterable = iterable;
+            this.body = body;
+        }
+
+        @Override
+        public <R> R accept(Visitor<R> visitor) {
+            return visitor.visitForStmt(this);
         }
     }
 

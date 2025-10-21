@@ -215,7 +215,7 @@ public class Lexer {
     }
 
     Token makeToken(TokenType type, String lexeme, Object literal) {
-        Token token = new Token(type, lexeme, literal, line);
+        Token token = new Token(type, lexeme, literal, this.line);
         this.tokens.add(token);
         return token;
     }

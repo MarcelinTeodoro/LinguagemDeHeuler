@@ -17,7 +17,10 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     public String print(List<Stmt> statements) {
         StringBuilder builder = new StringBuilder();
         for (Stmt stmt : statements) {
-            builder.append(stmt.accept(this)).append("\n");
+            // CORREÇÃO: Verifique se o comando não é nulo antes de tentar imprimi-lo.
+            if (stmt != null) {
+                builder.append(stmt.accept(this)).append("\n");
+            }
         }
         return builder.toString();
     }
@@ -69,10 +72,17 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     public String visitBlockStmt(Stmt.Block stmt) {
         StringBuilder builder = new StringBuilder();
         builder.append("(block");
+
         for (Stmt statement : stmt.statements) {
-            builder.append(" ").append(statement.accept(this));
+            // CORREÇÃO: Verifique se o comando não é nulo antes de processá-lo.
+            if (statement != null) {
+                builder.append("\n  ");
+                String stmtStr = statement.accept(this);
+                builder.append(stmtStr.replace("\n", "\n  "));
+            }
         }
-        builder.append(")");
+
+        builder.append("\n)");
         return builder.toString();
     }
 

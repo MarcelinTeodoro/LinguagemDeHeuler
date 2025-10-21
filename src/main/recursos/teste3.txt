@@ -1,0 +1,47 @@
+// Arquivo: teste_com_erros.txt
+// Este arquivo contém vários erros intencionais para validar o compilador.
+
+// ❌ Erro léxico (símbolo desconhecido)
+var @nome = "teste";
+
+// ❌ Erro de sintaxe (falta ponto e vírgula)
+var a = 10
+
+// ❌ Erro de sintaxe (parêntese não fechado)
+print (a + 2;
+
+// ❌ Erro semântico (variável não declarada)
+print b;
+
+// ❌ Erro de tipo (soma entre número e string, se sua linguagem não permitir)
+var x = 3 + "texto";
+
+// ❌ Erro de comparação inválida (operador duplo)
+if (a === 10) {
+  print "ok";
+}
+
+// ❌ Erro de escopo (variável declarada dentro de bloco usada fora)
+{
+  var local = 5;
+}
+print local;
+
+// ❌ Erro de atribuição em expressão booleana
+if (a = 5) {
+  print "erro de operador lógico";
+}
+
+// ❌ Erro: palavra-chave reservada usada como identificador
+var if = 10;
+
+// ❌ Erro: operador unário duplo inválido
+var y = !!+a;
+
+// ❌ Erro: while sem corpo e sem parênteses corretos
+while a < 10 print a;
+
+// ❌ Erro: bloco não fechado
+{
+  var z = 1;
+  print z;

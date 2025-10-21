@@ -1,22 +1,40 @@
-// Arquivo: teste_final.txt (versão final)
+// Arquivo: teste_completo.txt
+// Este arquivo testa a maioria das regras da nossa gramática.
 
-var i = 0;
-print "Iniciando o laço:";
+var global = "Eu sou global";
 
-while (i < 3) {
-  if (i == 1) {
-    print "i é um!";
+{
+  print "Iniciando o teste...";
+  var a = 1;
+  var b = 2;
+
+  // Teste de precedência complexa e atribuição
+  var c = (a + b) * 2 > 5 and true or !false;
+
+  // Teste de if-else com expressão lógica
+  if (c) {
+    print "A expressão complexa é verdadeira!";
   } else {
-    print "i não é um...";
+    print "A expressão complexa é falsa!";
   }
-  i = i + 1; // <-- AGORA USAMOS A ATRIBUIÇÃO CORRETA!
+
+  // Teste de while com if-else aninhado
+  var i = 0;
+  while (i < 3) {
+    if (i == 0) {
+      print "zero";
+    } else if (i == 1) {
+      print "um";
+    } else {
+      print "outro numero";
+    }
+    i = i + 1; // Teste de atribuição
+  }
+
+  var d = nil; // Teste de nil
+  print d;
+
+  print global; // Teste de acesso a variável de escopo externo
 }
 
-print "Fim do laço.";
-// A condição é: false OU true E false
-// O parser deve agrupar (true E false) primeiro.
-if (false or true and false) {
-  print "verdadeiro";
-} else {
-  print "falso";
-}
+print "Fim do teste.";

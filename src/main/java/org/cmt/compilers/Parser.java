@@ -15,6 +15,8 @@ public class Parser {
     private final List<Token> tokens;
     private int current = 0;
     private final EnumMap<TokenType, ParseRule> rules;
+    private boolean panicMode = false;
+
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
@@ -39,8 +41,13 @@ public class Parser {
     // --- LÓGICA DE PARSING ---
 
     private Stmt declaration() {
-        if (match(Var)) return varDeclaration();
-        return statement();
+        try {
+            if (match(Var)) return varDeclaration();
+            return statement();
+        } catch (ParseError error) {
+            synchronize();
+            return null; // Retorna null para o laço principal saber que houve um erro.
+        }
     }
 
     private Stmt statement() {
@@ -291,9 +298,35 @@ public class Parser {
     }
 
     private ParseError error(Token token, String message) {
-        Heuler.error(token.line, message); // Usa o sistema de erro central
+        if (!panicMode) {  // Evita repetir a mesma mensagem
+            Heuler.error(token, message);
+            panicMode = true; // Entra em modo de pânico
+        }
         return new ParseError();
     }
+    private void synchronize() {
+        panicMode = false; // Sai do modo de pânico
+
+        while (!isAtEnd()) {
+            if (previous().type == Semicolon) return;
+
+            switch (peek().type) {
+                case Class:
+                case Fun:
+                case Var:
+                case For:
+                case If:
+                case While:
+                case Print:
+                case Return:
+                    return;
+            }
+
+            advance();
+        }
+    }
+
+
     private boolean match(TokenType... types) {
         for (TokenType type : types) {
             if (check(type)) {

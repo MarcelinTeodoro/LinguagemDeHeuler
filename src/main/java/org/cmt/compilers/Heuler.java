@@ -14,7 +14,7 @@ public class Heuler {
 
     public static void main(String[] args) throws IOException {
 
-        runFile("src/main/recursos/teste2.txt");
+        runFile("src/main/recursos/teste3.txt");
     }
 
     private static void runFile(String path) throws IOException {
@@ -28,18 +28,45 @@ public class Heuler {
         Lexer lexer = new Lexer();
         TokenStream tokenStream = lexer.scanTokens(source);
         List<Token> tokens = tokenStream.getTokens();
-        if (hadError) return;
+
+       // if (hadError) return;
+
+        // --- BLOCO DE CÓDIGO ADICIONADO ---
+        System.out.println("--- Tabela de Tokens ---");
+        for (Token token : tokens) {
+            // Usamos printf para formatar a saída em colunas alinhadas
+            System.out.printf("Linha %-4d | %-15s | Lexema: '%s'\n",
+                    token.line,
+                    token.type,
+                    token.lexeme);
+            if (token.type == TokenType.EndOfFile) {
+                break;
+            }
+        }
+        System.out.println("------------------------\n");
+        // --- FIM DO BLOCO ADICIONADO ---
+
 
         // Fase 2: Análise Sintática (Parser)
         Parser parser = new Parser(tokens);
         List<Stmt> statements = parser.parse();
-        if (hadError) return;
+
+        // Comentado para depuração, como discutimos
+        // if (hadError) return;
 
         // Fase 3: Visualização da AST
+        System.out.println("--- Árvore Sintática Gerada ---");
         System.out.println(new AstPrinter().print(statements));
     }
 
     // Sistema de notificação de erros...
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EndOfFile) {
+            report(token.line, " no final", message);
+        } else {
+            report(token.line, " em '" + token.lexeme + "'", message);
+        }
+    }
     static void error(int line, String message) {
         report(line, "", message);
     }

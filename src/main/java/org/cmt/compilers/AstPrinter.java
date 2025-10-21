@@ -105,10 +105,19 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
 
     @Override
     public String visitVarStmt(Stmt.Var stmt) {
-        if (stmt.initializer == null) {
-            return "(var " + stmt.name.lexeme + ")";
+        String name = stmt.name.lexeme;
+        if (stmt.typeToken != null) {
+            name = stmt.typeToken.lexeme + " " + name;
         }
-        return parenthesize("var " + stmt.name.lexeme, stmt.initializer);
+        if (stmt.initializer == null) {
+            return "(var " + name + ")";
+        }
+        return parenthesize("var " + name, stmt.initializer);
+    }
+
+    @Override
+    public String visitForStmt(Stmt.For stmt) {
+        return parenthesize("for " + stmt.iterator.lexeme, stmt.iterable, stmt.body);
     }
 
     @Override

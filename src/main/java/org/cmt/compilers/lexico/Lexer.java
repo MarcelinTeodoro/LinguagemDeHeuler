@@ -19,6 +19,10 @@ public class Lexer {
     private int start;
     private int end;
     private int line;
+    /** Coluna atual (0-based) enquanto percorre a linha. */
+    private int column;
+    /** Coluna onde o lexema atual começou. */
+    private int startColumn;
     private String source;
     private List<Token> tokens;
 
@@ -36,6 +40,21 @@ public class Lexer {
         keywords.put("while",  TokenType.While);
         keywords.put("and",  TokenType.And);
         keywords.put("or",  TokenType.Or);
+        // Adiciona palavras-reservadas presentes no TokenType/gramática
+        keywords.put("for", TokenType.For);
+        keywords.put("true", TokenType.True);
+        keywords.put("false", TokenType.False);
+        keywords.put("nil", TokenType.Nil);
+        keywords.put("return", TokenType.Return);
+        keywords.put("class", TokenType.Class);
+        keywords.put("fun", TokenType.Fun);
+        keywords.put("super", TokenType.Super);
+        keywords.put("this", TokenType.This);
+    // Tipos primitivos e palavras auxiliares
+    keywords.put("int", TokenType.Int);
+    keywords.put("float", TokenType.Float);
+    keywords.put("bool", TokenType.Bool);
+    keywords.put("in", TokenType.Identifier); // 'in' treated as identifier or reserved in grammar; keep as Identifier for now
     }
 
     public Lexer() {
@@ -48,10 +67,12 @@ public class Lexer {
      */
     public TokenStream scanTokens(String source) {
         this.line = 1;
+        this.column = 0;
         this.source = source;
 
         while (!isAtEnd()) {
             this.start = this.end; // marca início do próximo lexema
+            this.startColumn = this.column;
             this.scanToken();
         }
 
@@ -80,6 +101,8 @@ public class Lexer {
                 // nova linha -> incrementar contador de linha
                 line++;
                 start = end;
+                // reinicia coluna ao começar nova linha
+                this.column = 0;
                 break;
 
             case ';': {
@@ -109,6 +132,11 @@ public class Lexer {
             case ')':
                 makeToken(TokenType.RightParen);
                 break;
+
+            case ',': {
+                makeToken(TokenType.Comma);
+                break;
+            }
 
             case '-':
                 makeToken(TokenType.Minus);
@@ -173,6 +201,7 @@ public class Lexer {
         while (!isAtEnd() && peek() != '"') {
             if (peek() == '\n') {
                 line++;
+                this.column = 0;
             }
             advance();
         }
@@ -186,7 +215,7 @@ public class Lexer {
         advance();
 
         String lexeme = source.substring(start + 1, end - 1);
-        makeToken(TokenType.STRING, lexeme, lexeme);
+        makeToken(TokenType.STRING, lexeme, lexeme, this.startColumn);
     }
 
     /**
@@ -208,7 +237,7 @@ public class Lexer {
 
         String lexeme = source.substring(this.start, this.end);
         Object literal = Double.parseDouble(lexeme);
-        makeToken(TokenType.Number, lexeme, literal);
+        makeToken(TokenType.Number, lexeme, literal, this.startColumn);
     }
 
     /**
@@ -223,25 +252,24 @@ public class Lexer {
         String lexeme = this.source.substring(start, end);
 
         if (keywords.containsKey(lexeme)) {
-            makeToken(keywords.get(lexeme));
+            makeToken(keywords.get(lexeme), lexeme, null, this.startColumn);
             return;
         }
-
-        makeToken(TokenType.Identifier, lexeme);
+        makeToken(TokenType.Identifier, lexeme, null, this.startColumn);
     }
 
     /* Helpers para criação e manipulação de tokens */
     Token makeToken(TokenType type) {
         String lexeme = this.source.substring(this.start, this.end);
-        return this.makeToken(type, lexeme, null);
+        return this.makeToken(type, lexeme, null, this.startColumn);
     }
 
     Token makeToken(TokenType type, String lexeme) {
-        return this.makeToken(type, lexeme, null);
+        return this.makeToken(type, lexeme, null, this.startColumn);
     }
 
-    Token makeToken(TokenType type, String lexeme, Object literal) {
-        Token token = new Token(type, lexeme, literal, this.line);
+    Token makeToken(TokenType type, String lexeme, Object literal, int column) {
+        Token token = new Token(type, lexeme, literal, this.line, column);
         this.tokens.add(token);
         return token;
     }
@@ -255,6 +283,8 @@ public class Lexer {
         char c = this.peek();
         this.end++;
 
+        // atualiza coluna: considera que advance consome exatamente um caractere
+        this.column++;
         return c;
     }
     private boolean match(char expected) {
@@ -280,11 +310,11 @@ public class Lexer {
     }
 
     boolean isAlphanumeric(char c) {
-        return isAlpha(c) || isDigit(c);
+        return isAlpha(c) || isDigit(c) || c == '_';
     }
 
     boolean isAlpha(char c) {
-        return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
     }
 
     boolean isDigit(char c) {

@@ -29,8 +29,12 @@ public class Heuler {
 
     public static void main(String[] args) throws IOException {
 
-        // Para depuração, o runner padrão lê o arquivo de recursos de teste.
-        runFile("src/main/recursos/teste3.txt");
+        // Se um caminho de arquivo for fornecido, usa-o; caso contrário usa o recurso de teste padrão.
+        if (args != null && args.length > 0) {
+            runFile(args[0]);
+        } else {
+            runFile("src/main/recursos/teste3.txt");
+        }
     }
 
     private static void runFile(String path) throws IOException {
@@ -51,9 +55,10 @@ public class Heuler {
         // Exibe tabela de tokens (útil para debugging)
         System.out.println("--- Tabela de Tokens ---");
         for (Token token : tokens) {
-            // Imprime linha, tipo e lexema de forma legível
-            System.out.printf("Linha %-4d | %-15s | Lexema: '%s'\n",
+            // Imprime linha:coluna, tipo e lexema de forma legível
+            System.out.printf("Linha %-4d:%-3d | %-15s | Lexema: '%s'\n",
                     token.line,
+                    token.column,
                     token.type,
                     token.lexeme);
             if (token.type == TokenType.EndOfFile) {
@@ -75,18 +80,22 @@ public class Heuler {
     // e lexema (quando disponível). Marca `hadError` para controle externo.
     public static void error(Token token, String message) {
         if (token.type == TokenType.EndOfFile) {
-            report(token.line, " no final", message);
+            report(token.line, token.column, " no final", message);
         } else {
-            report(token.line, " em '" + token.lexeme + "'", message);
+            report(token.line, token.column, " em '" + token.lexeme + "'", message);
         }
     }
 
-    public static void error(int line, String message) {
-        report(line, "", message);
+    public static void error(int line, int column, String message) {
+        report(line, column, "", message);
     }
 
-    private static void report(int line, String where, String message) {
-        System.err.println("[linha " + line + "] Erro" + where + ": " + message);
+    public static void error(int line, String message) {
+        report(line, 0, "", message);
+    }
+
+    private static void report(int line, int column, String where, String message) {
+        System.err.println("[linha " + line + ":" + column + "] Erro" + where + ": " + message);
         hadError = true;
     }
 }

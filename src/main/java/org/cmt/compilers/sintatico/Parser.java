@@ -74,6 +74,7 @@ public class Parser {
         if (match(LeftBrace)) return new Stmt.Block(block());
         if (match(If)) return ifStatement();
         if (match(While)) return whileStatement();
+        if (match(For)) return forStatement();
         return expressionStatement();
     }
 
@@ -100,13 +101,32 @@ public class Parser {
 
     /** Parse de declaração `var` (var nome = expr;). */
     private Stmt varDeclaration() {
+        // Suporta sintaxe opcional de anotação de tipo: var <type> name = expr;
+        Token typeToken = null;
+        if (check(TokenType.Int) || check(TokenType.Float) || check(TokenType.Bool)) {
+            typeToken = advance();
+        }
         Token name = consume(Identifier, "Esperava um nome de variável.");
         Expr initializer = null;
         if (match(Equal)) {
             initializer = expression();
         }
         consume(Semicolon, "Esperava ';' depois da declaração da variável.");
-        return new Stmt.Var(name, initializer);
+        return new Stmt.Var(name, typeToken, initializer);
+    }
+
+    /** Parse de for: for identifier in expr scope */
+    private Stmt forStatement() {
+        Token iterator = consume(Identifier, "Esperava identificador depois de 'for'.");
+        // aceita a palavra-chave 'in' como identificador ou token - verificamos lexema
+        if (!check(Identifier) || !peek().lexeme.equals("in")) {
+            error(peek(), "Esperava 'in' depois do identificador do for.");
+        }
+        // consome 'in'
+        advance();
+        Expr iterable = expression();
+        Stmt body = statement();
+        return new Stmt.For(iterator, iterable, body);
     }
 
     private Stmt printStatement() {

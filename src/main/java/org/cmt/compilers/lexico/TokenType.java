@@ -28,6 +28,9 @@ public enum TokenType {
     And, Class, Else, False, Fun, For, If, Nil, Or,
     Print, Return, Super, This, True, Var, While,
 
+    // Tipos primitivos
+    Int, Float, Bool,
+
     // Palavras específicas da linguagem
     Def, Let,
 

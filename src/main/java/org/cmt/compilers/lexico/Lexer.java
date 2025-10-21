@@ -1,22 +1,32 @@
-package main.java.org.cmt.compilers;
+package main.java.org.cmt.compilers.lexico;
 
-
+import main.java.org.cmt.compilers.Heuler;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Scanner / Lexer simples que percorre o código-fonte e produz uma lista de tokens.
+ *
+ * Estratégia:
+ * - Mantém índices `start` e `end` para delimitar o lexema atual.
+ * - Avança caractere a caractere, reconhecendo tokens por meio de um switch
+ *   e por funções auxiliares (string, number, identifier).
+ * - Produz tokens com tipo, lexema, literal (quando aplicável) e número de linha.
+ */
 public class Lexer {
     private int start;
     private int end;
-    private char current;
     private int line;
     private String source;
     private List<Token> tokens;
 
-    private static Map<String, TokenType> keywords = new HashMap<String, TokenType>();
+    /** Mapa de palavras-reservadas -> token type. */
+    private static Map<String, TokenType> keywords = new HashMap<>();
 
     static {
+        // Palavras-reservadas atualmente mapeadas.
         keywords.put("let", TokenType.Let);
         keywords.put("def", TokenType.Def);
         keywords.put("if", TokenType.If);
@@ -29,22 +39,32 @@ public class Lexer {
     }
 
     public Lexer() {
-        this.tokens = new ArrayList<Token>();
+        this.tokens = new ArrayList<>();
     }
 
+    /**
+     * Ponto de entrada do scanner. Retorna um TokenStream com todos os tokens
+     * encontrados no texto de entrada.
+     */
     public TokenStream scanTokens(String source) {
         this.line = 1;
         this.source = source;
 
         while (!isAtEnd()) {
-            this.start = this.end;
+            this.start = this.end; // marca início do próximo lexema
             this.scanToken();
         }
 
+        // Ao final, adiciona token de EOF
         makeToken(TokenType.EndOfFile);
         return new TokenStream(this.tokens);
     }
 
+    /**
+     * Lê um token a partir da posição atual. Método central com um switch
+     * que reconhece tokens simples e delega para funções auxiliares quando
+     * necessário (números, strings, identificadores).
+     */
     public void scanToken() {
         char c = this.advance();
 
@@ -52,10 +72,12 @@ public class Lexer {
             case ' ':
             case '\t':
             case '\r':
+                // espaços em branco são ignorados entre tokens
                 start = end;
                 break;
 
             case '\n':
+                // nova linha -> incrementar contador de linha
                 line++;
                 start = end;
                 break;
@@ -80,43 +102,36 @@ public class Lexer {
                 break;
             }
 
-            case '(': {
+            case '(':
                 makeToken(TokenType.LeftParen);
                 break;
-            }
 
-            case ')': {
+            case ')':
                 makeToken(TokenType.RightParen);
                 break;
-            }
 
-            case '-': {
+            case '-':
                 makeToken(TokenType.Minus);
                 break;
-            }
 
-            case '+': {
+            case '+':
                 makeToken(TokenType.Plus);
                 break;
-            }
 
-            case '*': {
+            case '*':
                 makeToken(TokenType.Star);
                 break;
-            }
 
-            case '/': {
+            case '/':
+                // comentário de linha: consome até fim da linha
                 if (peek() == '/') {
-                    // É um comentário, então avance até o final da linha.(tratamento de comentario)
                     while (!isAtEnd() && peek() != '\n') {
                         advance();
                     }
                 } else {
-                    // É apenas uma barra de divisão.
                     makeToken(TokenType.Slash);
                 }
                 break;
-            }
 
             case '!':
                 makeToken(match('=') ? TokenType.BangEqual : TokenType.Bang);
@@ -132,6 +147,7 @@ public class Lexer {
                 break;
 
             case '"': {
+                // string literal
                 string();
                 break;
             }
@@ -142,12 +158,17 @@ public class Lexer {
                 } else if (isAlpha(c)) {
                     identifier();
                 } else {
+                    // caractere desconhecido -> reporta erro léxico
                     Heuler.error(line, "Caractere inválido.");
                 }
             }
         }
     }
 
+    /**
+     * Lê uma string até a próxima aspa. Atualiza linha se encontrar quebras de
+     * linha no interior da string. Ao encontrar erro (EOF antes da '"') reporta.
+     */
     private void string() {
         while (!isAtEnd() && peek() != '"') {
             if (peek() == '\n') {
@@ -161,25 +182,25 @@ public class Lexer {
             return;
         }
 
-        // Consome as aspas de fechamento '"'
+        // consome a aspa final
         advance();
 
-        // Extrai o valor da string sem as aspas
         String lexeme = source.substring(start + 1, end - 1);
         makeToken(TokenType.STRING, lexeme, lexeme);
     }
 
+    /**
+     * Lê um número (inteiro ou com ponto decimal). Converte para Double e cria
+     * o token correspondente.
+     */
     private void number() {
         while (!isAtEnd() && isDigit(peek())) {
             advance();
         }
 
-        // Verifica se há uma parte fracionária
         if (peek() == '.' && isDigit(peekNext())) {
-            // Consome o "."
             advance();
 
-            // Continua consumindo os dígitos após o ponto
             while (!isAtEnd() && isDigit(peek())) {
                 advance();
             }
@@ -190,6 +211,10 @@ public class Lexer {
         makeToken(TokenType.Number, lexeme, literal);
     }
 
+    /**
+     * Lê um identificador ou palavra-chave. Se for palavra-reservada, usa o
+     * tipo correspondente do mapa `keywords`, caso contrário gera IDENTIFIER.
+     */
     void identifier() {
         while (!isAtEnd() && isAlphanumeric(peek())) {
             advance();
@@ -205,6 +230,7 @@ public class Lexer {
         makeToken(TokenType.Identifier, lexeme);
     }
 
+    /* Helpers para criação e manipulação de tokens */
     Token makeToken(TokenType type) {
         String lexeme = this.source.substring(this.start, this.end);
         return this.makeToken(type, lexeme, null);
@@ -220,6 +246,7 @@ public class Lexer {
         return token;
     }
 
+    /* Funções utilitárias de leitura de caracteres */
     boolean isAtEnd() {
         return this.end >= source.length();
     }

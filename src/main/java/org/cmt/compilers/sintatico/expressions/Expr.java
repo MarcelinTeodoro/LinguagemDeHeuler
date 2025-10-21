@@ -1,14 +1,17 @@
-// Salve este código como Expr.java
-// (e apague os outros arquivos de expressão individuais)
+package main.java.org.cmt.compilers.sintatico.expressions;
 
-package main.java.org.cmt.compilers.expressions;
-
-import main.java.org.cmt.compilers.Token;
+import main.java.org.cmt.compilers.lexico.Token;
 import java.util.List;
 
+/**
+ * Hierarquia de nós de expressão (AST). Cada nó implementa `accept` para o
+ * Visitor, permitindo que visitantes (por exemplo AstPrinter) processem a árvore.
+ *
+ * Nós incluídos: Binary, Unary, Literal, Grouping, Variable, Assign, Logical,
+ * Call, Get, Set, This, Super.
+ */
 public abstract class Expr {
 
-    // A interface do Visitor. Cada tipo de expressão terá um método visit()
     public interface Visitor<R> {
         R visitAssignExpr(Assign expr);
         R visitBinaryExpr(Binary expr);
@@ -24,12 +27,8 @@ public abstract class Expr {
         R visitVariableExpr(Variable expr);
     }
 
-    // O método que permite que um "visitante" acesse o nó.
     public abstract <R> R accept(Visitor<R> visitor);
 
-    // --- CLASSES ANINHADAS PARA CADA TIPO DE EXPRESSÃO ---
-
-    // Expressão Binária: para operadores como +, -, *, /
     public static class Binary extends Expr {
         public final Expr left;
         public final Token operator;
@@ -47,7 +46,6 @@ public abstract class Expr {
         }
     }
 
-    // Expressão Unária: para operadores como - (negação) ou !
     public static class Unary extends Expr {
         public final Token operator;
         public final Expr right;
@@ -63,7 +61,6 @@ public abstract class Expr {
         }
     }
 
-    // Expressão Literal: para valores como números, strings, true, false, nil
     public static class Literal extends Expr {
         public final Object value;
 
@@ -71,15 +68,12 @@ public abstract class Expr {
             this.value = value;
         }
 
-
-
         @Override
         public <R> R accept(Visitor<R> visitor) {
             return visitor.visitLiteralExpr(this);
         }
     }
 
-    // Expressão de Agrupamento: para parênteses (...)
     public static class Grouping extends Expr {
         public final Expr expression;
 
@@ -92,9 +86,7 @@ public abstract class Expr {
             return visitor.visitGroupingExpr(this);
         }
     }
-    // ... suas classes Binary, Unary, Literal, Grouping ...
 
-    // Para acesso a uma variável (ex: 'imprima a;')
     public static class Variable extends Expr {
         public final Token name;
 
@@ -108,7 +100,6 @@ public abstract class Expr {
         }
     }
 
-    // Para atribuição a uma variável (ex: 'a = 1;')
     public static class Assign extends Expr {
         public final Token name;
         public final Expr value;
@@ -124,7 +115,6 @@ public abstract class Expr {
         }
     }
 
-    // Para operadores lógicos (and, or) que têm comportamento de curto-circuito
     public static class Logical extends Expr {
         public final Expr left;
         public final Token operator;
@@ -142,10 +132,9 @@ public abstract class Expr {
         }
     }
 
-    // Para chamadas de função (ex: 'funcao(a, b)')
     public static class Call extends Expr {
         public final Expr callee;
-        public final Token paren; // O ')' para sabermos a linha em caso de erro.
+        public final Token paren;
         public final List<Expr> arguments;
 
         public Call(Expr callee, Token paren, List<Expr> arguments) {
@@ -160,7 +149,6 @@ public abstract class Expr {
         }
     }
 
-    // Para acesso a propriedades de um objeto (ex: 'objeto.propriedade')
     public static class Get extends Expr {
         public final Expr object;
         public final Token name;
@@ -176,7 +164,6 @@ public abstract class Expr {
         }
     }
 
-    // Para atribuição a propriedades de um objeto (ex: 'objeto.propriedade = valor')
     public static class Set extends Expr {
         public final Expr object;
         public final Token name;
@@ -194,7 +181,6 @@ public abstract class Expr {
         }
     }
 
-    // Para a palavra-chave 'this'
     public static class This extends Expr {
         public final Token keyword;
 
@@ -208,7 +194,6 @@ public abstract class Expr {
         }
     }
 
-    // Para a palavra-chave 'super'
     public static class Super extends Expr {
         public final Token keyword;
         public final Token method;
@@ -223,7 +208,4 @@ public abstract class Expr {
             return visitor.visitSuperExpr(this);
         }
     }
-
-    // NOTA: Outras classes de expressão como Assign, Variable, etc., seriam adicionadas aqui
-    // à medida que implementamos essas funcionalidades. Por agora, estas são suficientes.
 }

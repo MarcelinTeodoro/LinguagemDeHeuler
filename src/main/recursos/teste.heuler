@@ -9,7 +9,7 @@ print "Iniciando a linguagem " + nome + " v" + versao;
 var contador = 0 //erro esperado
 while (contador < 5 and ativo) {
   print "Contagem: " + contador;
-  
+
   if (contador == 2 or contador == 4) {
     print "Numero par (exceto 0)";
   } else if (contador == 3) {
@@ -21,7 +21,7 @@ while (contador < 5 and ativo) {
     var temp = contador * 10;
     print "Temp: " + temp;
   }
-  
+
   contador = contador + 1;
 }
 

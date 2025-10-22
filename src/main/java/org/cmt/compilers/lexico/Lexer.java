@@ -31,7 +31,7 @@ public class Lexer {
 
     static {
         // Palavras-reservadas atualmente mapeadas.
-        keywords.put("let", TokenType.Let);
+
         keywords.put("def", TokenType.Def);
         keywords.put("if", TokenType.If);
         keywords.put("else", TokenType.Else);

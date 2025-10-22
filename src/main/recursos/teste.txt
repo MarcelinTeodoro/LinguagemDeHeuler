@@ -1,26 +1,33 @@
-// Teste de todos os símbolos válidos
-( ) { }  - + ; * /
+// Um teste de tamanho médio com várias funcionalidades e um erro.
 
-! !=
-= ==
-< <=
-> >=
+var nome = "Heuler";
+var versao = 0.1;
+var ativo = true;
 
-//Teste de todos os símbolos invalidos
-@ # $
-? | & , .
+print "Iniciando a linguagem " + nome + " v" + versao;
 
-123.313
-32
-45.34
-3244.5432
-// Teste de literais
-var inteiro = 123;
-var decimal = 45.67;
-var acesso = 123.metodo(); // O ponto não deve ser parte do número
+var contador = 0 //erro esperado
+while (contador < 5 and ativo) {
+  print "Contagem: " + contador;
+  
+  if (contador == 2 or contador == 4) {
+    print "Numero par (exceto 0)";
+  } else if (contador == 3) {
+    print "Tres!";
+  }
 
-var poema = "Eu sou uma string
-que ocupa múltiplas
-linhas.";
+  // Bloco aninhado para teste de escopo (embora não tenhamos escopo ainda)
+  {
+    var temp = contador * 10;
+    print "Temp: " + temp;
+  }
+  
+  contador = contador + 1;
+}
 
-var erro = "Esta string nunca fecha
+// Teste do for..in (assumindo que 'nome' pode ser iterado, o parser aceitará)
+for letra in nome {
+  print "Letra: " + letra;
+}
+
+print "Fim.";

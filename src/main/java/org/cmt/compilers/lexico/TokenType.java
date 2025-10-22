@@ -32,7 +32,7 @@ public enum TokenType {
     Int, Float, Bool,
 
     // Palavras específicas da linguagem
-    Def, Let,
+    Def,
 
     // Fim do arquivo
     EndOfFile

@@ -33,7 +33,7 @@ public class Heuler {
         if (args != null && args.length > 0) {
             runFile(args[0]);
         } else {
-            runFile("src/main/recursos/teste3.txt");
+            runFile("src/main/recursos/teste.txt");
         }
     }
 

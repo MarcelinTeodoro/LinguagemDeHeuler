@@ -1,0 +1,22 @@
+package main.java.org.cmt.compilers.bytecode;
+
+
+/**
+ * Define os códigos de operação (Opcodes) que a nossa VM executará.
+ * Cada instrução terá um byte que a representa.
+ */
+public enum OpCode {
+    // --- Opcodes Essenciais ---
+    OP_RETURN,     // Retorna de uma função (ou termina o script)
+    OP_CONSTANT,   // Carrega uma constante (ex: número, string) na pilha
+
+    // --- Opcodes Aritméticos ---
+    OP_NEGATE,     // Inverte o sinal de um número (ex: -5)
+    OP_ADD,        // Soma
+    OP_SUBTRACT,   // Subtração
+    OP_MULTIPLY,   // Multiplicação
+    OP_DIVIDE;     // Divisão
+
+    // Vamos adicionar mais Opcodes aqui (OP_JUMP, OP_GET_LOCAL, etc.)
+    // à medida que avançamos no roadmap.
+}

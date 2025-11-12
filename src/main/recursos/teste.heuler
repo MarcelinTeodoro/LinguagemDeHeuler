@@ -6,7 +6,7 @@ var ativo = true;
 
 print "Iniciando a linguagem " + nome + " v" + versao;
 
-var contador = 0 //erro esperado
+var contador = 0; //erro esperado
 while (contador < 5 and ativo) {
   print "Contagem: " + contador;
 

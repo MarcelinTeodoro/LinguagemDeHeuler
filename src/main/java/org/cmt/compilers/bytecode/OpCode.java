@@ -15,8 +15,10 @@ public enum OpCode {
     OP_ADD,        // Soma
     OP_SUBTRACT,   // Subtração
     OP_MULTIPLY,   // Multiplicação
-    OP_DIVIDE;     // Divisão
-
+    OP_DIVIDE,     // Divisão
+    OP_PRINT,      //
+    OP_POP,        //
+    OP_NIL
     // Vamos adicionar mais Opcodes aqui (OP_JUMP, OP_GET_LOCAL, etc.)
     // à medida que avançamos no roadmap.
 }

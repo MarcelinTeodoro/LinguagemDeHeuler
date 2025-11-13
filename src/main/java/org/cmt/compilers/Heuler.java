@@ -13,6 +13,9 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import main.java.org.cmt.compilers.bytecode.Compiler;
+import main.java.org.cmt.compilers.bytecode.VM;
+import main.java.org.cmt.compilers.bytecode.Chunk;
 
 /**
  * Ponto de entrada do programa. Coordena as três fases simples demonstradas
@@ -26,6 +29,8 @@ import java.util.List;
 public class Heuler {
 
     static boolean hadError = false;
+    static VM vm = new VM(); // Crie a VM uma vez
+
 
     public static void main(String[] args) throws IOException {
 
@@ -33,7 +38,7 @@ public class Heuler {
         if (args != null && args.length > 0) {
             runFile(args[0]);
         } else {
-            runFile("src/main/recursos/teste2.heuler");
+            runFile("src/main/recursos/testeBytecode.heuler");
         }
     }
 
@@ -46,6 +51,28 @@ public class Heuler {
     /**
      * Fluxo principal: tokeniza, parseia e imprime a AST.
      */
+    private static void run(String source) {
+        // Fase 1: Análise Léxica (Scanner)
+        Lexer lexer = new Lexer();
+        TokenStream tokenStream = lexer.scanTokens(source);
+        List<Token> tokens = tokenStream.getTokens();
+        if (hadError) return;
+
+        // Fase 2: Análise Sintática (Parser)
+        Parser parser = new Parser(tokens);
+        List<Stmt> statements = parser.parse();
+        if (hadError) return;
+
+        // Fase 3: Compilação (AST -> Bytecode)
+        Compiler compiler = new Compiler(vm);
+        boolean success = compiler.compile(statements);
+        if (!success) return;
+
+        // Fase 4: Execução (VM)
+        Chunk chunk = compiler.getCompiledChunk(); // Precisamos de um getter no Compiler
+        vm.interpret(chunk);
+    }
+    /*
     private static void run(String source) {
         // Fase 1: Análise Léxica (Scanner)
         Lexer lexer = new Lexer();
@@ -75,6 +102,8 @@ public class Heuler {
         System.out.println("--- Árvore Sintática Gerada ---");
         System.out.println(new AstPrinter().print(statements));
     }
+
+     */
 
     // Sistema de notificação de erros: fornece mensagens com número de linha
     // e lexema (quando disponível). Marca `hadError` para controle externo.

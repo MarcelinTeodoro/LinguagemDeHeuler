@@ -45,10 +45,12 @@ public class VM {
 
             switch (op) {
                 case OP_RETURN: {
-                    // Por enquanto, OP_RETURN termina a VM e imprime o resultado
-                    Object result = pop();
-                    System.out.println("Resultado da Execução: " + result);
-                    return InterpretResult.INTERPRET_OK;
+                    pop(); // Apenas descarta o valor de retorno final (o 'nil')
+                    return InterpretResult.INTERPRET_OK; // Termina silenciosamente
+                }
+                case OP_NIL: {
+                    push(null); // 'null' do Java representa 'nil' da Heuler
+                    break;
                 }
 
                 case OP_CONSTANT: {
@@ -67,6 +69,16 @@ public class VM {
                 case OP_SUBTRACT: binaryOp('-'); break;
                 case OP_MULTIPLY: binaryOp('*'); break;
                 case OP_DIVIDE:   binaryOp('/'); break;
+
+                case OP_PRINT: {
+                    Object value = pop();
+                    System.out.println(value);
+                    break;
+                }
+                case OP_POP: {
+                    pop(); // Apenas descarta o valor do topo da pilha
+                    break;
+                }
             }
         }
     }

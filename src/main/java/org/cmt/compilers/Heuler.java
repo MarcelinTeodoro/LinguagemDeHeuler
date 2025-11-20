@@ -16,6 +16,7 @@ import java.util.List;
 import main.java.org.cmt.compilers.bytecode.Compiler;
 import main.java.org.cmt.compilers.bytecode.VM;
 import main.java.org.cmt.compilers.bytecode.Chunk;
+import main.java.org.cmt.compilers.sintatico.Resolver;
 
 /**
  * Ponto de entrada do programa. Coordena as três fases simples demonstradas
@@ -63,13 +64,20 @@ public class Heuler {
         List<Stmt> statements = parser.parse();
         if (hadError) return;
 
-        // Fase 3: Compilação (AST -> Bytecode)
+        // --- NOVA FASE 3: Análise Semântica (Resolver) ---
+        Resolver resolver = new Resolver();
+        resolver.resolve(statements);
+
+        // Se o resolver encontrou erros (ex: var a = a;), paramos aqui.
+        if (hadError) return;
+
+        // Fase 4: Compilação (AST -> Bytecode)
         Compiler compiler = new Compiler(vm);
         boolean success = compiler.compile(statements);
         if (!success) return;
 
-        // Fase 4: Execução (VM)
-        Chunk chunk = compiler.getCompiledChunk(); // Precisamos de um getter no Compiler
+        // Fase 5: Execução (VM)
+        Chunk chunk = compiler.getCompiledChunk();
         vm.interpret(chunk);
     }
     /*

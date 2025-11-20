@@ -81,13 +81,44 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     /* Implementação de todos os outros métodos obrigatórios da interface */
     @Override public Void visitExpressionStmt(Stmt.Expression stmt) { resolve(stmt.expression); return null; }
     @Override public Void visitPrintStmt(Stmt.Print stmt) { resolve(stmt.expression); return null; }
-    @Override public Void visitVarStmt(Stmt.Var stmt) { /* A lógica principal virá aqui */ return null; }
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        // 1. Declara a variável (marca como "em processamento")
+        declare(stmt.name);
+
+        // 2. Resolve o inicializador (se houver)
+        if (stmt.initializer != null) {
+            resolve(stmt.initializer);
+        }
+
+        // 3. Define a variável (marca como "pronta para uso")
+        define(stmt.name);
+        return null;
+    }
     @Override public Void visitIfStmt(Stmt.If stmt) { /* ... */ return null; }
     @Override public Void visitWhileStmt(Stmt.While stmt) { /* ... */ return null; }
     @Override public Void visitForStmt(Stmt.For stmt) { /* ... */ return null; }
 
-    @Override public Void visitAssignExpr(Expr.Assign expr) { /* A lógica principal virá aqui */ return null; }
-    @Override public Void visitVariableExpr(Expr.Variable expr) { /* A lógica principal virá aqui */ return null; }
+    @Override
+    public Void visitAssignExpr(Expr.Assign expr) {
+        // Resolve a expressão do valor (lado direito) primeiro
+        resolve(expr.value);
+        // Resolve a variável que está a ser atribuída (lado esquerdo)
+        resolveLocal(expr, expr.name);
+        return null;
+    }
+    @Override
+    public Void visitVariableExpr(Expr.Variable expr) {
+        // Verifica se a variável está a ser acedida dentro do seu próprio inicializador
+        if (!scopes.isEmpty() &&
+                scopes.peek().containsKey(expr.name.lexeme) &&
+                scopes.peek().get(expr.name.lexeme) == false) { // O 'false' que definimos em declare()
+            Heuler.error(expr.name, "Não pode ler uma variável local no seu próprio inicializador.");
+        }
+
+        resolveLocal(expr, expr.name);
+        return null;
+    }
 
     @Override public Void visitBinaryExpr(Expr.Binary expr) { resolve(expr.left); resolve(expr.right); return null; }
     @Override public Void visitGroupingExpr(Expr.Grouping expr) { resolve(expr.expression); return null; }
@@ -101,4 +132,45 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     @Override public Void visitSetExpr(Expr.Set expr) { return null; }
     @Override public Void visitSuperExpr(Expr.Super expr) { return null; }
     @Override public Void visitThisExpr(Expr.This expr) { return null; }
+    /**
+     * Adiciona a variável ao escopo atual, mas marca-a como "não pronta".
+     * Isto permite-nos detetar erros como 'var a = a;'.
+     */
+    private void declare(Token name) {
+        if (scopes.isEmpty()) return; // Escopo global, por agora não fazemos nada
+
+        Map<String, Boolean> scope = scopes.peek();
+
+        // Verifica se já existe uma variável com este nome no escopo local
+        if (scope.containsKey(name.lexeme)) {
+            Heuler.error(name, "Já existe uma variável com este nome neste escopo.");
+        }
+
+        scope.put(name.lexeme, false); // 'false' = declarada, mas não definida
+    }
+    /**
+     * Marca a variável como "definida" e pronta para ser usada.
+     */
+    private void define(Token name) {
+        if (scopes.isEmpty()) return;
+        scopes.peek().put(name.lexeme, true); // 'true' = definida e pronta
+    }
+    /**
+     * Método auxiliar para procurar a variável nos escopos,
+     * começando do mais interno para o mais externo.
+     */
+    private void resolveLocal(Expr expr, Token name) {
+        // Itera da pilha de escopos, do mais interno para o mais externo
+        for (int i = scopes.size() - 1; i >= 0; i--) {
+            if (scopes.get(i).containsKey(name.lexeme)) {
+                // Encontrámos! Informa o interpretador/compilador
+                // (Esta é a "magia" - o próximo passo seria dizer ao
+                // compilador que esta variável está 'scopes.size() - 1 - i' níveis acima)
+                return;
+            }
+        }
+
+        // Se chegarmos aqui, não encontrámos em nenhum escopo local.
+        // Assumimos que é global (por enquanto não reportamos erro).
+    }
 }

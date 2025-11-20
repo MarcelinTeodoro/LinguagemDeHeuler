@@ -1,3 +1,8 @@
-print (1 + 2) * 3;
-print 10 / 2 - 1;
--5 + 15; // Este resultado será descartado
+var cafe = "expresso";
+print cafe;
+
+var preco = 5;
+print preco * 2;
+
+cafe = "cappuccino"; // Teste de atribuição
+print cafe;

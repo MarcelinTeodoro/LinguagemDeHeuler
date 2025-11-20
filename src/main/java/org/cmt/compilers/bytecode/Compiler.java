@@ -150,14 +150,56 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     // Stmt
     @Override public Void visitBlockStmt(Stmt.Block stmt) { return null; }
-    @Override public Void visitVarStmt(Stmt.Var stmt) { return null; }
+    // --- Declaração de Variável (var a = 1;) ---
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        // 1. Compila a expressão inicializadora (ex: 1)
+        if (stmt.initializer != null) {
+            compile(stmt.initializer);
+        } else {
+            // Se não tiver inicializador (var a;), iniciamos com nil
+            emitByte((byte) OpCode.OP_NIL.ordinal());
+        }
+
+        // 2. Adiciona o nome da variável à tabela de constantes
+        int nameIndex = currentChunk().addConstant(stmt.name.lexeme);
+
+        // 3. Emite a instrução para definir a global usando esse nome
+        emitByte((byte)OpCode.OP_DEFINE_GLOBAL.ordinal());
+        emitByte((byte)nameIndex);
+
+        return null;
+    }
     @Override public Void visitIfStmt(Stmt.If stmt) { return null; }
     @Override public Void visitWhileStmt(Stmt.While stmt) { return null; }
     @Override public Void visitForStmt(Stmt.For stmt) { return null; }
 
     // Expr
-    @Override public Void visitVariableExpr(Expr.Variable expr) { return null; }
-    @Override public Void visitAssignExpr(Expr.Assign expr) { return null; }
+    // --- Acesso a Variável (print a;) ---
+    @Override
+    public Void visitVariableExpr(Expr.Variable expr) {
+        // Por enquanto, assumimos que tudo é global
+        int nameIndex = currentChunk().addConstant(expr.name.lexeme);
+
+        emitByte((byte)OpCode.OP_GET_GLOBAL.ordinal());
+        emitByte((byte)nameIndex);
+
+        return null;
+    }
+    // --- Atribuição (a = 2;) ---
+    @Override
+    public Void visitAssignExpr(Expr.Assign expr) {
+        // 1. Compila o valor a ser atribuído
+        compile(expr.value);
+
+        // 2. Emite a instrução para definir o valor
+        int nameIndex = currentChunk().addConstant(expr.name.lexeme);
+
+        emitByte((byte)OpCode.OP_SET_GLOBAL.ordinal());
+        emitByte((byte)nameIndex);
+
+        return null;
+    }
     @Override public Void visitLogicalExpr(Expr.Logical expr) { return null; }
     @Override public Void visitCallExpr(Expr.Call expr) { return null; }
     @Override public Void visitGetExpr(Expr.Get expr) { return null; }

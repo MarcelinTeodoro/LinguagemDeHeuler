@@ -3,6 +3,9 @@ package main.java.org.cmt.compilers.bytecode;
 
 import main.java.org.cmt.compilers.Heuler;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A Máquina Virtual (VM) da Heuler.
  * Executa o bytecode gerado pelo Compilador.
@@ -10,6 +13,7 @@ import main.java.org.cmt.compilers.Heuler;
  */
 public class VM {
 
+    private final Map<String, Object> globals = new HashMap<>();
     private static final int STACK_MAX = 256; // Tamanho máximo da pilha
     private Chunk chunk; // O bytecode que estamos a executar
     private int ip;      // Instruction Pointer: aponta para a próxima instrução
@@ -79,6 +83,35 @@ public class VM {
                     pop(); // Apenas descarta o valor do topo da pilha
                     break;
                 }
+                case OP_DEFINE_GLOBAL: {
+                    // O nome da variável vem da tabela de constantes
+                    String name = readString();
+                    // O valor está no topo da pilha (resultado da expressão inicializadora)
+                    globals.put(name, pop());
+                    break;
+                }
+
+                case OP_GET_GLOBAL: {
+                    String name = readString();
+                    if (!globals.containsKey(name)) {
+                        // Erro de tempo de execução: Variável não definida
+                        Heuler.error(chunk.getLine(ip), "Variável indefinida '" + name + "'.");
+                        return InterpretResult.INTERPRET_RUNTIME_ERROR;
+                    }
+                    push(globals.get(name));
+                    break;
+                }
+
+                case OP_SET_GLOBAL: {
+                    String name = readString();
+                    if (!globals.containsKey(name)) {
+                        Heuler.error(chunk.getLine(ip), "Variável indefinida '" + name + "'.");
+                        return InterpretResult.INTERPRET_RUNTIME_ERROR;
+                    }
+                    Object value = peek(0); // Pega o valor sem remover (para permitir a = b = 1)
+                    globals.put(name, value);
+                    break;
+                }
             }
         }
     }
@@ -134,5 +167,13 @@ public class VM {
         }
         this.stackTop--;
         return this.stack[stackTop];
+    }
+    private String readString() {
+        return (String) readConstant();
+    }
+
+    // Helper para espreitar a pilha sem remover
+    private Object peek(int distance) {
+        return stack[stackTop - 1 - distance];
     }
 }

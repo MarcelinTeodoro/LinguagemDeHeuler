@@ -18,7 +18,11 @@ public enum OpCode {
     OP_DIVIDE,     // Divisão
     OP_PRINT,      //
     OP_POP,        //
-    OP_NIL
+    OP_NIL,
+    OP_DEFINE_GLOBAL, // Cria uma nova variável global
+    OP_GET_GLOBAL,    // Lê o valor de uma variável global
+    OP_SET_GLOBAL,    // Atualiza o valor de uma variável global
+
     // Vamos adicionar mais Opcodes aqui (OP_JUMP, OP_GET_LOCAL, etc.)
     // à medida que avançamos no roadmap.
 }

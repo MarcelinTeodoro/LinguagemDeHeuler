@@ -335,7 +335,83 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         return null;
     }
-    @Override public Void visitForStmt(Stmt.For stmt) { return null; }
+    @Override
+    public Void visitForStmt(Stmt.For stmt) {
+        // 1. Criar um escopo para as variáveis de controle do loop (o iterador e o limite)
+        beginScope();
+
+        // --- A. Definir o Limite ($limit) ---
+        // Compila a expressão 'iterable' (ex: o número 5). O valor fica no topo da pilha.
+        compile(stmt.iterable);
+
+        // Criamos uma variável local oculta para armazenar esse limite.
+        // Usamos um nome que o usuário não pode digitar ($) para evitar conflitos.
+        Token limitVar = new Token(TokenType.Identifier, "$limit", null, 0, 0);
+        addLocal(limitVar); // O compilador agora sabe que o slot X da pilha é o $limit
+
+        // --- B. Definir o Iterador (i) ---
+        // Coloca o valor inicial 0 na pilha.
+        emitByte((byte)OpCode.OP_CONSTANT.ordinal());
+        int zeroIndex = currentChunk().addConstant(0.0);
+        emitByte((byte)zeroIndex);
+
+        // Define a variável do usuário (ex: 'i') apontando para esse 0.
+        addLocal(stmt.iterator);
+
+        // --- C. Início do Loop ---
+        int loopStart = currentChunk().getCode().size();
+
+        // --- D. Condição (i < limit) ---
+        // Precisamos ler as variáveis locais da pilha para comparar.
+        int iterSlot = resolveLocal(stmt.iterator);
+        int limitSlot = resolveLocal(limitVar);
+
+        // Carrega i
+        emitByte((byte)OpCode.OP_GET_LOCAL.ordinal());
+        emitByte((byte)iterSlot);
+
+        // Carrega limit
+        emitByte((byte)OpCode.OP_GET_LOCAL.ordinal());
+        emitByte((byte)limitSlot);
+
+        // Verifica i < limit
+        emitByte((byte)OpCode.OP_LESS.ordinal());
+
+        // --- E. Saída ---
+        int exitJump = emitJump(OpCode.OP_JUMP_IF_FALSE);
+        emitByte((byte)OpCode.OP_POP.ordinal()); // Descarta o resultado da comparação (true)
+
+        // --- F. Corpo ---
+        compile(stmt.body);
+
+        // --- G. Incremento (i = i + 1) ---
+        // Carrega i
+        emitByte((byte)OpCode.OP_GET_LOCAL.ordinal());
+        emitByte((byte)iterSlot);
+
+        // Carrega 1
+        emitByte((byte)OpCode.OP_CONSTANT.ordinal());
+        int oneIndex = currentChunk().addConstant(1.0);
+        emitByte((byte)oneIndex);
+
+        // Soma
+        emitByte((byte)OpCode.OP_ADD.ordinal());
+
+        // Atualiza i na pilha
+        emitByte((byte)OpCode.OP_SET_LOCAL.ordinal());
+        emitByte((byte)iterSlot);
+        emitByte((byte)OpCode.OP_POP.ordinal()); // O SET deixa o valor na pilha, precisamos descartar
+
+        // --- H. Loop Back ---
+        emitLoop(loopStart);
+
+        // --- I. Finalização ---
+        patchJump(exitJump);
+        emitByte((byte)OpCode.OP_POP.ordinal()); // Descarta o resultado da comparação (false)
+
+        endScope(); // Descarta 'i' e '$limit' da pilha
+        return null;
+    }
 
     // Expr
     // --- Acesso a Variável (print a;) ---

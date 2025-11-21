@@ -16,8 +16,8 @@ public enum OpCode {
     OP_SUBTRACT,   // Subtração
     OP_MULTIPLY,   // Multiplicação
     OP_DIVIDE,     // Divisão
-    OP_PRINT,      //
-    OP_POP,        //
+    OP_PRINT,
+    OP_POP,
     OP_NIL,
     OP_DEFINE_GLOBAL, // Cria uma nova variável global
     OP_GET_GLOBAL,    // Lê o valor de uma variável global
@@ -34,5 +34,5 @@ public enum OpCode {
     OP_GREATER,
     OP_LESS,
     OP_NOT,
-    // à medida que avançamos no roadmap.
+
 }

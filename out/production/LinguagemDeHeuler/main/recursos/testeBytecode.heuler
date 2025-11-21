@@ -1,0 +1,9 @@
+var i = 0;
+while (i < 3) {
+    print i;
+    i++;
+}
+
+var a = 10;
+a--;
+print a;

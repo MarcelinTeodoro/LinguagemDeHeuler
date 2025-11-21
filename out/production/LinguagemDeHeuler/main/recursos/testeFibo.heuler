@@ -1,0 +1,50 @@
+// Teste de integração total da VM Heuler
+
+var nome = "HeulerVM";
+print "Iniciando " + nome + "...";
+
+// 1. Teste de Aritmética e Lógica
+var a = 10;
+var b = 20;
+if (a < b and b > 15) {
+    print "Teste Logico: OK";
+} else {
+    print "Teste Logico: FALHA";
+}
+
+// 2. Teste de While, Locais e Incremento (Bónus)
+print "Calculando Fibonacci (0 a 5):";
+var i = 0;
+var max = 10; // Limite do loop
+
+// Variáveis para fibonacci
+var n1 = 0;
+var n2 = 1;
+var proximo = 0;
+
+while (i < 6) {
+    // Teste de escopo local dentro do loop
+    {
+        var prefixo = "Fib ";
+        print prefixo + i + ": " + n1;
+    }
+
+    // Lógica do Fibonacci
+    proximo = n1 + n2;
+    n1 = n2;
+    n2 = proximo;
+
+    // Teste do operador de incremento (Bónus)
+    i++;
+}
+
+// 3. Teste de Curto-Circuito
+print "Teste Curto-Circuito (OR):";
+if (true or (i = 100)) {
+    // O 'i = 100' NÃO deve ser executado porque o primeiro é true
+    print "Curto-circuito funcionou!";
+}
+
+print "Valor final de i (deve ser 6): " + i;
+
+print "Fim do teste.";

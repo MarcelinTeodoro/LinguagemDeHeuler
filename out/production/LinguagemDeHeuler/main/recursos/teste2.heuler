@@ -1,0 +1,40 @@
+// Arquivo: teste_completo.txt
+// Este arquivo testa a maioria das regras da nossa gramática.
+
+var global = "Eu sou global";
+
+{
+  print "Iniciando o teste...";
+  var a = 1;
+  var b = 2;
+
+  // Teste de precedência complexa e atribuição
+  var c = (a + b) * 2 > 5 and true or !false;
+
+  // Teste de if-else com expressão lógica
+  if (c) {
+    print "A expressão complexa é verdadeira!";
+  } else {
+    print "A expressão complexa é falsa!";
+  }
+
+  // Teste de while com if-else aninhado
+  var i = 0;
+  while (i < 3) {
+    if (i == 0) {
+      print "zero";
+    } else if (i == 1) {
+      print "um";
+    } else {
+      print "outro numero";
+    }
+    i = i + 1; // Teste de atribuição
+  }
+
+  var d = nil; // Teste de nil
+  print d;
+
+  print global; // Teste de acesso a variável de escopo externo
+}
+
+print "Fim do teste.";

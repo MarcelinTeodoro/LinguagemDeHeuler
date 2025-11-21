@@ -1,0 +1,33 @@
+// Um teste de tamanho médio com várias funcionalidades e um erro.
+
+var nome = "Heuler";
+var versao = 0.1;
+var ativo = true;
+
+print "Iniciando a linguagem " + nome + " v" + versao;
+
+var contador = 0; //erro esperado
+while (contador < 5 and ativo) {
+  print "Contagem: " + contador;
+
+  if (contador == 2 or contador == 4) {
+    print "Numero par (exceto 0)";
+  } else if (contador == 3) {
+    print "Tres!";
+  }
+
+  // Bloco aninhado para teste de escopo (embora não tenhamos escopo ainda)
+  {
+    var temp = contador * 10;
+    print "Temp: " + temp;
+  }
+
+  contador = contador + 1;
+}
+
+// Teste do for..in (assumindo que 'nome' pode ser iterado, o parser aceitará)
+for letra in nome {
+  print "Letra: " + letra;
+}
+
+print "Fim.";

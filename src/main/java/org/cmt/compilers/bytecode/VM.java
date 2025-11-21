@@ -172,23 +172,39 @@ public class VM {
     // --- Funções Auxiliares da VM ---
 
     private void binaryOp(char op) {
-        // Lógica LIFO: o operando da direita é 'b', o da esquerda é 'a'
         Object b = pop();
         Object a = pop();
 
-        // Verificação de tipo simples (vamos melhorar depois)
-        if (!(a instanceof Double) || !(b instanceof Double)) {
-            Heuler.error(0, "Operandos devem ser números."); // Linha de erro temporária
-            return; // Precisamos de um InterpretResult de erro aqui
+        // --- Lógica para Concatenação de Strings (+) ---
+        if (op == '+') {
+            // Se algum dos dois for String, tratamos como concatenação
+            if (a instanceof String || b instanceof String) {
+                push(String.valueOf(a) + String.valueOf(b));
+                return;
+            }
         }
 
+        // --- Lógica para Aritmética Numérica ---
+
+        // Se não for concatenação, ambos DEVEM ser números
+        if (!(a instanceof Double) || !(b instanceof Double)) {
+            Heuler.error(0, "Operandos devem ser números.");
+            // IMPORTANTE: Não podemos apenas retornar, precisamos manter a pilha consistente.
+            // Vamos empilhar um 'nil' ou 0 para evitar o Stack Underflow subsequente.
+            push(null);
+            return;
+        }
+
+        double valA = (double) a;
+        double valB = (double) b;
+
         switch (op) {
-            case '+': push((double)a + (double)b); break;
-            case '-': push((double)a - (double)b); break;
-            case '*': push((double)a * (double)b); break;
-            case '/': push((double)a / (double)b); break;
-            case '>': push((double)a > (double)b); break;
-            case '<': push((double)a < (double)b); break;
+            case '+': push(valA + valB); break;
+            case '-': push(valA - valB); break;
+            case '*': push(valA * valB); break;
+            case '/': push(valA / valB); break;
+            case '>': push(valA > valB); break;
+            case '<': push(valA < valB); break;
         }
     }
     // Lê 2 bytes e combina-os num número de 16 bits (0 a 65535)

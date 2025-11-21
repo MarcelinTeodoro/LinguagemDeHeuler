@@ -1,0 +1,51 @@
+// --- REGRAS PRINCIPAIS ---
+Program         ::= Declaration* EOF
+
+Declaration     ::= VarDecl | Statement
+
+// --- DECLARAÇÕES ---
+VarDecl         ::= 'var' ( Type )? Identifier ( '=' Expression )? ';'
+Type            ::= 'int' | 'float' | 'bool'
+
+// --- COMANDOS ---
+Statement       ::= ExprStmt | PrintStmt | IfStmt | WhileStmt | ForStmt | Block
+
+Block           ::= '{' Declaration* '}'
+
+IfStmt          ::= 'if' '(' Expression ')' Statement ( 'else' Statement )?
+
+WhileStmt       ::= 'while' '(' Expression ')' Statement
+
+ForStmt         ::= 'for' Identifier 'in' Expression Statement
+
+PrintStmt       ::= 'print' Expression ';'
+
+ExprStmt        ::= Expression ';'
+
+// --- EXPRESSÕES (PRATT PARSER HIERARCHY) ---
+Expression      ::= Assignment // Nível mais baixo
+
+Assignment      ::= ( Identifier '=' Assignment ) | LogicalOr // Lado esquerdo validado semanticamente
+
+LogicalOr       ::= LogicalAnd ( 'or' LogicalAnd )*
+
+LogicalAnd      ::= Equality ( 'and' Equality )*
+
+Equality        ::= Comparison ( ( '!=' | '==' ) Comparison )*
+
+Comparison      ::= Term ( ( '>' | '>=' | '<' | '<=' ) Term )*
+
+Term            ::= Factor ( ( '-' | '+' ) Factor )*
+
+Factor          ::= Unary ( ( '/' | '*' ) Unary )*
+
+Unary           ::= ( '!' | '-' ) Unary | Primary
+
+Primary         ::= Number | String | 'true' | 'false' | 'nil'
+                  | Identifier
+                  | '(' Expression ')'
+
+// --- TOKENS BÁSICOS (Implícitos) ---
+// Number        ::= Defined by Lexer (Int / Float)
+// String        ::= Defined by Lexer
+// Identifier    ::= Defined by Lexer

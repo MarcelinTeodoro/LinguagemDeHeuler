@@ -39,7 +39,7 @@ public class Heuler {
         if (args != null && args.length > 0) {
             runFile(args[0]);
         } else {
-            runFile("src/main/recursos/testeBytecode.heuler");
+            runFile("src/main/recursos/testeFibo.heuler");
         }
     }
 
@@ -80,38 +80,7 @@ public class Heuler {
         Chunk chunk = compiler.getCompiledChunk();
         vm.interpret(chunk);
     }
-    /*
-    private static void run(String source) {
-        // Fase 1: Análise Léxica (Scanner)
-        Lexer lexer = new Lexer();
-        TokenStream tokenStream = lexer.scanTokens(source);
-        List<Token> tokens = tokenStream.getTokens();
 
-        // Exibe tabela de tokens (útil para debugging)
-        System.out.println("--- Tabela de Tokens ---");
-        for (Token token : tokens) {
-            // Imprime linha:coluna, tipo e lexema de forma legível
-            System.out.printf("Linha %-4d:%-3d | %-15s | Lexema: '%s'\n",
-                    token.line,
-                    token.column,
-                    token.type,
-                    token.lexeme);
-            if (token.type == TokenType.EndOfFile) {
-                break;
-            }
-        }
-        System.out.println("------------------------\n");
-
-        // Fase 2: Análise Sintática (Parser)
-        Parser parser = new Parser(tokens);
-        List<Stmt> statements = parser.parse();
-
-        // Fase 3: Visualização da AST
-        System.out.println("--- Árvore Sintática Gerada ---");
-        System.out.println(new AstPrinter().print(statements));
-    }
-
-     */
 
     // Sistema de notificação de erros: fornece mensagens com número de linha
     // e lexema (quando disponível). Marca `hadError` para controle externo.

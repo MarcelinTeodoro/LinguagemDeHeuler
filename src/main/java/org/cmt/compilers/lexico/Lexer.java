@@ -138,12 +138,12 @@ public class Lexer {
                 break;
             }
 
-            case '-':
-                makeToken(TokenType.Minus);
+            case '+':
+                makeToken(match('+') ? TokenType.PlusPlus : TokenType.Plus);
                 break;
 
-            case '+':
-                makeToken(TokenType.Plus);
+            case '-':
+                makeToken(match('-') ? TokenType.MinusMinus : TokenType.Minus);
                 break;
 
             case '*':

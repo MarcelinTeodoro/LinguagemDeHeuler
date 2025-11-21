@@ -1,7 +1,9 @@
-print "teste and:";
-print true and true;
-print true and false;
+var i = 0;
+while (i < 3) {
+    print i;
+    i++;
+}
 
-print "teste or:";
-print false or true;
-print false or false;
+var a = 10;
+a--;
+print a;

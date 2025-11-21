@@ -13,7 +13,7 @@ package main.java.org.cmt.compilers.lexico;
 public enum TokenType {
     // Tokens de um único caractere
     LeftParen, RightParen, LeftBrace, RightBrace,
-    Comma, Dot, Minus, Plus, Semicolon, Slash, Star,
+    Comma, Dot, Minus,MinusMinus, Plus, PlusPlus, Semicolon, Slash, Star,
 
     // Tokens de um ou dois caracteres
     Bang, BangEqual,
@@ -35,5 +35,6 @@ public enum TokenType {
     Def,
 
     // Fim do arquivo
-    EndOfFile
+    EndOfFile,
+
 }

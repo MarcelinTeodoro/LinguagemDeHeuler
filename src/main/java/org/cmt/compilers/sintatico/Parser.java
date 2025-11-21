@@ -271,6 +271,8 @@ public class Parser {
 
         rules.put(TokenType.Minus, new ParseRule(this::unary, this::binary, Precedence.TERM));
         rules.put(TokenType.Plus,  new ParseRule(null, this::binary, Precedence.TERM));
+        rules.put(TokenType.PlusPlus,   new ParseRule(null, this::increment, Precedence.CALL));
+        rules.put(TokenType.MinusMinus, new ParseRule(null, this::increment, Precedence.CALL));
         rules.put(TokenType.Star,  new ParseRule(null, this::binary, Precedence.FACTOR));
         rules.put(TokenType.Slash, new ParseRule(null, this::binary, Precedence.FACTOR));
         rules.put(TokenType.And, new ParseRule(null, this::logical, Precedence.AND));
@@ -360,4 +362,24 @@ public class Parser {
     private boolean isAtEnd() { return peek().type == TokenType.EndOfFile; }
     private Token peek() { return tokens.get(current); }
     private Token previous() { return tokens.get(current - 1); }
+    private Expr increment(Expr left) {
+        // Verifica se o que está à esquerda é uma variável válida
+        if (!(left instanceof Expr.Variable)) {
+            error(previous(), "Apenas variáveis podem ser incrementadas.");
+        }
+
+        Token name = ((Expr.Variable)left).name;
+        Token operator = previous(); // O '++' ou '--' que acabamos de consumir
+
+        // Determina se somamos ou subtraímos 1
+        TokenType type = (operator.type == TokenType.PlusPlus) ? TokenType.Plus : TokenType.Minus;
+        Token binOp = new Token(type, operator.lexeme, null, operator.line, 0); // Token sintético
+
+        // Cria a expressão: (var + 1)
+        Expr one = new Expr.Literal(1.0);
+        Expr incremented = new Expr.Binary(left, binOp, one);
+
+        // Retorna a atribuição: var = (var + 1)
+        return new Expr.Assign(name, incremented);
+    }
 }

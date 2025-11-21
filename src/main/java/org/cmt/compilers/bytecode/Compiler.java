@@ -3,6 +3,7 @@ package main.java.org.cmt.compilers.bytecode;
 
 import main.java.org.cmt.compilers.Heuler;
 import main.java.org.cmt.compilers.lexico.Token;
+import main.java.org.cmt.compilers.lexico.TokenType;
 import main.java.org.cmt.compilers.sintatico.Stmt;
 import main.java.org.cmt.compilers.sintatico.expressions.Expr;
 
@@ -114,6 +115,39 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             localCount--;
         }
     }
+    // Emite um salto para frente e retorna o índice do placeholder para ser remendado depois
+    private int emitJump(OpCode instruction) {
+        emitByte((byte)instruction.ordinal());
+        emitByte((byte) 0xff); // Placeholder byte 1
+        emitByte((byte) 0xff); // Placeholder byte 2
+        return currentChunk().getCode().size() - 2;
+    }
+
+    // Volta ao 'offset' e escreve a distância correta até o ponto atual
+    private void patchJump(int offset) {
+        // -2 para ajustar o próprio tamanho do offset do salto
+        int jump = currentChunk().getCode().size() - offset - 2;
+
+        if (jump > 65535) {
+            // Erro simples se o código for grande demais
+            throw new CompileError();
+        }
+
+        // Escreve os dois bytes do short
+        currentChunk().getCode().set(offset, (byte)((jump >> 8) & 0xff));
+        currentChunk().getCode().set(offset + 1, (byte)(jump & 0xff));
+    }
+
+    // Emite um salto para trás (loop)
+    private void emitLoop(int loopStart) {
+        emitByte((byte) OpCode.OP_LOOP.ordinal());
+
+        int offset = currentChunk().getCode().size() - loopStart + 2;
+        if (offset > 65535) throw new CompileError();
+
+        emitByte((byte)((offset >> 8) & 0xff));
+        emitByte((byte)(offset & 0xff));
+    }
 
     // --- Compilando Comandos (Stmt.Visitor) ---
 
@@ -166,6 +200,7 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         // Emite a instrução unária
         switch (expr.operator.type) {
             case Minus: emitByte((byte) OpCode.OP_NEGATE.ordinal()); break;
+            case Bang:  emitByte((byte) OpCode.OP_NOT.ordinal()); break;
             // (Adicionaremos OP_NOT para '!' aqui)
         }
         return null;
@@ -185,7 +220,15 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             case Minus:   emitByte((byte)OpCode.OP_SUBTRACT.ordinal()); break;
             case Star:    emitByte((byte)OpCode.OP_MULTIPLY.ordinal()); break;
             case Slash:   emitByte((byte)OpCode.OP_DIVIDE.ordinal()); break;
-            // (Adicionaremos operadores de comparação aqui)
+            // --- NOVOS OPERADORES ---
+            case EqualEqual:   emitByte((byte)OpCode.OP_EQUAL.ordinal()); break;
+            case Greater:      emitByte((byte)OpCode.OP_GREATER.ordinal()); break;
+            case Less:         emitByte((byte)OpCode.OP_LESS.ordinal()); break;
+            // Para >= usamos < e invertemos (not)
+            case GreaterEqual: emitByte((byte)OpCode.OP_LESS.ordinal()); emitByte((byte)OpCode.OP_NOT.ordinal()); break;
+            // Para <= usamos > e invertemos (not)
+            case LessEqual:    emitByte((byte)OpCode.OP_GREATER.ordinal()); emitByte((byte)OpCode.OP_NOT.ordinal()); break;
+            case BangEqual:    emitByte((byte)OpCode.OP_EQUAL.ordinal()); emitByte((byte)OpCode.OP_NOT.ordinal()); break;
         }
         return null;
     }
@@ -229,8 +272,69 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
         return null;
     }
-    @Override public Void visitIfStmt(Stmt.If stmt) { return null; }
-    @Override public Void visitWhileStmt(Stmt.While stmt) { return null; }
+
+    @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        // 1. Compila a condição
+        compile(stmt.condition);
+
+        // 2. Emite salto: Se falso, salta para o 'else' (ou fim)
+        // jumpToElse: guardamos a posição para remendar depois
+        int jumpToElse = emitJump(OpCode.OP_JUMP_IF_FALSE);
+
+        // 3. Retira a condição da pilha (já foi usada pelo JUMP_IF_FALSE se for true)
+        emitByte((byte)OpCode.OP_POP.ordinal());
+
+        // 4. Compila o bloco 'then'
+        compile(stmt.thenBranch);
+
+        // 5. Emite salto: Ao fim do 'then', salta para o fim total (pula o else)
+        int jumpToEnd = emitJump(OpCode.OP_JUMP);
+
+        // 6. Remenda o primeiro salto (agora sabemos onde o else começa)
+        patchJump(jumpToElse);
+
+        // 7. Retira a condição da pilha (se saltámos para cá, ela ainda estava lá)
+        emitByte((byte) OpCode.OP_POP.ordinal());
+
+        // 8. Compila o bloco 'else' (se existir)
+        if (stmt.elseBranch != null) {
+            compile(stmt.elseBranch);
+        }
+
+        // 9. Remenda o segundo salto (agora sabemos onde o fim é)
+        patchJump(jumpToEnd);
+
+        return null;
+    }
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        // 1. Marca o início do loop
+        int loopStart = currentChunk().getCode().size();
+
+        // 2. Compila a condição
+        compile(stmt.condition);
+
+        // 3. Emite salto de saída: Se falso, sai do loop
+        int exitJump = emitJump(OpCode.OP_JUMP_IF_FALSE);
+
+        // 4. Pop da condição (se for true)
+        emitByte((byte)OpCode.OP_POP.ordinal());
+
+        // 5. Compila o corpo
+        compile(stmt.body);
+
+        // 6. Emite salto de volta para o início
+        emitLoop(loopStart);
+
+        // 7. Remenda o salto de saída
+        patchJump(exitJump);
+
+        // 8. Pop da condição (se saltou para fora)
+        emitByte((byte)OpCode.OP_POP.ordinal());
+
+        return null;
+    }
     @Override public Void visitForStmt(Stmt.For stmt) { return null; }
 
     // Expr
@@ -271,7 +375,46 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
         return null;
     }
-    @Override public Void visitLogicalExpr(Expr.Logical expr) { return null; }
+
+    @Override
+    public Void visitLogicalExpr(Expr.Logical expr) {
+        // 1. Compila o lado esquerdo
+        compile(expr.left);
+
+        // 2. Verifica se podemos fazer curto-circuito (short-circuit)
+        // AND: Se a esquerda for false, todo o resultado é false -> salta para o fim.
+        // OR:  Se a esquerda for true, todo o resultado é true  -> salta para o fim.
+
+        int endJump = -1;
+
+        if (expr.operator.type == TokenType.And) {
+            endJump = emitJump(OpCode.OP_JUMP_IF_FALSE);
+        } else {
+            // Para o OR é um pouco mais subtil:
+            // Queremos saltar se for VERDADEIRO.
+            // Como só temos JUMP_IF_FALSE, vamos fazer:
+            // JUMP_IF_FALSE (para o próximo passo)
+            // JUMP (para o fim) -> Achou verdadeiro!
+            // próximo passo: continua a avaliação
+
+            int elseJump = emitJump(OpCode.OP_JUMP_IF_FALSE);
+            int end = emitJump(OpCode.OP_JUMP);
+
+            patchJump(elseJump);
+            endJump = end;
+        }
+
+        // 3. Se não houve curto-circuito, descartamos o valor da esquerda
+        // e avaliamos o da direita.
+        emitByte((byte) OpCode.OP_POP.ordinal());
+
+        compile(expr.right);
+
+        // 4. Remenda o salto do curto-circuito
+        patchJump(endJump);
+
+        return null;
+    }
     @Override public Void visitCallExpr(Expr.Call expr) { return null; }
     @Override public Void visitGetExpr(Expr.Get expr) { return null; }
     @Override public Void visitSetExpr(Expr.Set expr) { return null; }

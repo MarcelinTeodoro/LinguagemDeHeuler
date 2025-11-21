@@ -23,8 +23,16 @@ public enum OpCode {
     OP_GET_GLOBAL,    // Lê o valor de uma variável global
     OP_SET_GLOBAL,    // Atualiza o valor de uma variável global
     OP_GET_LOCAL, // Lê da pilha num índice específico
-    OP_SET_LOCAL  // Escreve na pilha num índice específico
+    OP_SET_LOCAL,  // Escreve na pilha num índice específico
 
-    // Vamos adicionar mais Opcodes aqui (OP_JUMP, OP_GET_LOCAL, etc.)
+    // --- CONTROLE DE FLUXO ---
+    OP_JUMP_IF_FALSE, // Salta para a frente se o topo da pilha for falso
+    OP_JUMP,          // Salta para a frente incondicionalmente (usado no else)
+    OP_LOOP,           // Salta para trás (usado no while)
+
+    OP_EQUAL,
+    OP_GREATER,
+    OP_LESS,
+    OP_NOT,
     // à medida que avançamos no roadmap.
 }

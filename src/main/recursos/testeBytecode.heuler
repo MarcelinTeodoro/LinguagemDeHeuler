@@ -1,6 +1,7 @@
-var a = "global";
-{
-  var a = "local";
-  print a; // Deve imprimir "local"
-}
-print a; // Deve imprimir "global"
+print "teste and:";
+print true and true;
+print true and false;
+
+print "teste or:";
+print false or true;
+print false or false;

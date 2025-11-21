@@ -23,6 +23,40 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Compiler(VM vm) {
         this.vm = vm;
     }
+    // Array para rastrear as locais ativas (simula a pilha)
+    private Local[] locals = new Local[256];
+    private int localCount = 0;
+    private int scopeDepth = 0; // 0 = Global, > 0 = Local
+
+    private static class Local {
+        final Token name;
+        final int depth; // Profundidade do escopo (0 = global, 1 = bloco, etc.)
+
+        Local(Token name, int depth) {
+            this.name = name;
+            this.depth = depth;
+        }
+    }
+    // 1. Adicionar uma local à lista do compilador
+    private void addLocal(Token name) {
+        if (localCount == 256) {
+            // Erro: muitas variáveis locais (limitação simples)
+            return;
+        }
+        locals[localCount++] = new Local(name, scopeDepth);
+    }
+
+    // 2. Tentar encontrar o índice de uma local (resolveLocal)
+    private int resolveLocal(Token name) {
+        // Procura do fim para o começo (para garantir o shadowing correto)
+        for (int i = localCount - 1; i >= 0; i--) {
+            Local local = locals[i];
+            if (name.lexeme.equals(local.name.lexeme)) {
+                return i; // Encontrou! Retorna o índice da pilha.
+            }
+        }
+        return -1; // Não é local (provavelmente é global)
+    }
 
     /**
      * Ponto de entrada principal do Compilador.
@@ -65,6 +99,20 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private void emitReturn() {
         emitByte((byte) OpCode.OP_NIL.ordinal()); // Coloca um 'nil' padrão na pilha
         emitByte((byte) OpCode.OP_RETURN.ordinal());
+    }
+    private void beginScope() {
+        scopeDepth++;
+    }
+
+    private void endScope() {
+        scopeDepth--;
+
+        // Descarta as variáveis que saíram de escopo
+        // Emitimos OP_POP para cada variável que estava neste nível
+        while (localCount > 0 && locals[localCount - 1].depth > scopeDepth) {
+            emitByte((byte)OpCode.OP_POP.ordinal());
+            localCount--;
+        }
     }
 
     // --- Compilando Comandos (Stmt.Visitor) ---
@@ -149,25 +197,36 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     // (Precisamos deles para o código compilar, mas a lógica virá depois)
 
     // Stmt
-    @Override public Void visitBlockStmt(Stmt.Block stmt) { return null; }
+    @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        beginScope();
+        for (Stmt statement : stmt.statements) {
+            compile(statement);
+        }
+        endScope();
+        return null;
+    }
     // --- Declaração de Variável (var a = 1;) ---
+
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
-        // 1. Compila a expressão inicializadora (ex: 1)
+        // Compila o inicializador (coloca o valor na pilha)
         if (stmt.initializer != null) {
             compile(stmt.initializer);
         } else {
-            // Se não tiver inicializador (var a;), iniciamos com nil
-            emitByte((byte) OpCode.OP_NIL.ordinal());
+            emitByte((byte)OpCode.OP_NIL.ordinal());
         }
 
-        // 2. Adiciona o nome da variável à tabela de constantes
-        int nameIndex = currentChunk().addConstant(stmt.name.lexeme);
-
-        // 3. Emite a instrução para definir a global usando esse nome
-        emitByte((byte)OpCode.OP_DEFINE_GLOBAL.ordinal());
-        emitByte((byte)nameIndex);
-
+        if (scopeDepth > 0) {
+            // É LOCAL: Não emitimos código! O valor já está na pilha.
+            // Apenas registramos que esse slot da pilha agora tem nome.
+            addLocal(stmt.name);
+        } else {
+            // É GLOBAL
+            int nameIndex = currentChunk().addConstant(stmt.name.lexeme);
+            emitByte((byte)OpCode.OP_DEFINE_GLOBAL.ordinal());
+            emitByte((byte)nameIndex);
+        }
         return null;
     }
     @Override public Void visitIfStmt(Stmt.If stmt) { return null; }
@@ -178,26 +237,38 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     // --- Acesso a Variável (print a;) ---
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        // Por enquanto, assumimos que tudo é global
-        int nameIndex = currentChunk().addConstant(expr.name.lexeme);
+        // Tenta resolver como local primeiro
+        int arg = resolveLocal(expr.name);
 
-        emitByte((byte)OpCode.OP_GET_GLOBAL.ordinal());
-        emitByte((byte)nameIndex);
-
+        if (arg != -1) {
+            // É LOCAL
+            emitByte((byte)OpCode.OP_GET_LOCAL.ordinal());
+            emitByte((byte)arg);
+        } else {
+            // É GLOBAL
+            int nameIndex = currentChunk().addConstant(expr.name.lexeme);
+            emitByte((byte)OpCode.OP_GET_GLOBAL.ordinal());
+            emitByte((byte)nameIndex);
+        }
         return null;
     }
     // --- Atribuição (a = 2;) ---
     @Override
     public Void visitAssignExpr(Expr.Assign expr) {
-        // 1. Compila o valor a ser atribuído
-        compile(expr.value);
+        compile(expr.value); // Valor na pilha
 
-        // 2. Emite a instrução para definir o valor
-        int nameIndex = currentChunk().addConstant(expr.name.lexeme);
+        int arg = resolveLocal(expr.name);
 
-        emitByte((byte)OpCode.OP_SET_GLOBAL.ordinal());
-        emitByte((byte)nameIndex);
-
+        if (arg != -1) {
+            // É LOCAL
+            emitByte((byte)OpCode.OP_SET_LOCAL.ordinal());
+            emitByte((byte)arg);
+        } else {
+            // É GLOBAL
+            int nameIndex = currentChunk().addConstant(expr.name.lexeme);
+            emitByte((byte)OpCode.OP_SET_GLOBAL.ordinal());
+            emitByte((byte)nameIndex);
+        }
         return null;
     }
     @Override public Void visitLogicalExpr(Expr.Logical expr) { return null; }

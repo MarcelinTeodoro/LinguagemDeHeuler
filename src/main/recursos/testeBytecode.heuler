@@ -1,8 +1,6 @@
-var cafe = "expresso";
-print cafe;
-
-var preco = 5;
-print preco * 2;
-
-cafe = "cappuccino"; // Teste de atribuição
-print cafe;
+var a = "global";
+{
+  var a = "local";
+  print a; // Deve imprimir "local"
+}
+print a; // Deve imprimir "global"

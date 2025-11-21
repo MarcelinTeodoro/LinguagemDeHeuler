@@ -22,6 +22,8 @@ public enum OpCode {
     OP_DEFINE_GLOBAL, // Cria uma nova variável global
     OP_GET_GLOBAL,    // Lê o valor de uma variável global
     OP_SET_GLOBAL,    // Atualiza o valor de uma variável global
+    OP_GET_LOCAL, // Lê da pilha num índice específico
+    OP_SET_LOCAL  // Escreve na pilha num índice específico
 
     // Vamos adicionar mais Opcodes aqui (OP_JUMP, OP_GET_LOCAL, etc.)
     // à medida que avançamos no roadmap.

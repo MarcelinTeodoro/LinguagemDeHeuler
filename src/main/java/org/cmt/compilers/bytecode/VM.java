@@ -112,6 +112,19 @@ public class VM {
                     globals.put(name, value);
                     break;
                 }
+                case OP_GET_LOCAL: {
+                    // O operando é o índice na pilha (slot) onde a variável está
+                    int slot = readByte() & 0xFF;
+                    push(stack[slot]); // Apenas copia o valor daquele slot para o topo
+                    break;
+                }
+
+                case OP_SET_LOCAL: {
+                    int slot = readByte() & 0xFF;
+                    Object value = peek(0); // O novo valor está no topo
+                    stack[slot] = value;    // Atualiza o slot específico
+                    break;
+                }
             }
         }
     }

@@ -491,6 +491,7 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         return null;
     }
+    //implementações futuras
     @Override public Void visitCallExpr(Expr.Call expr) { return null; }
     @Override public Void visitGetExpr(Expr.Get expr) { return null; }
     @Override public Void visitSetExpr(Expr.Set expr) { return null; }

@@ -179,11 +179,18 @@ public class Compiler implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitLiteralExpr(Expr.Literal expr) {
-        // Adiciona o valor literal (ex: 123.0) à tabela de constantes
-        int index = currentChunk().addConstant(expr.value);
-        // Emite a instrução OP_CONSTANT seguida do índice
-        emitByte((byte)OpCode.OP_CONSTANT.ordinal());
-        emitByte((byte)index);
+        if (expr.value == null) {
+            emitByte((byte)OpCode.OP_NIL.ordinal());
+        } else if (Boolean.TRUE.equals(expr.value)) {
+            emitByte((byte)OpCode.OP_TRUE.ordinal());
+        } else if (Boolean.FALSE.equals(expr.value)) {
+            emitByte((byte)OpCode.OP_FALSE.ordinal());
+        } else {
+            // Apenas números e strings vão para a tabela de constantes
+            int index = currentChunk().addConstant(expr.value);
+            emitByte((byte)OpCode.OP_CONSTANT.ordinal());
+            emitByte((byte)index);
+        }
         return null;
     }
 

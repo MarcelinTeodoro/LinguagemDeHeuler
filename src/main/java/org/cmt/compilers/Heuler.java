@@ -8,6 +8,7 @@ import main.java.org.cmt.compilers.lexico.TokenType;
 import main.java.org.cmt.compilers.sintatico.Parser;
 import main.java.org.cmt.compilers.sintatico.Stmt;
 import main.java.org.cmt.compilers.AstPrinter;
+import main.java.org.cmt.compilers.bytecode.Debug;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -78,6 +79,7 @@ public class Heuler {
 
         // Fase 5: Execução (VM)
         Chunk chunk = compiler.getCompiledChunk();
+        Debug.disassembleChunk(chunk, "Código Compilado");
         vm.interpret(chunk);
     }
 

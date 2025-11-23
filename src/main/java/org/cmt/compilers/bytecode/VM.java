@@ -57,6 +57,8 @@ public class VM {
                         push(null); // 'null' do Java representa 'nil' da Heuler
                         break;
                     }
+                    case OP_TRUE:  push(true); break;
+                    case OP_FALSE: push(false); break;
 
                     case OP_CONSTANT: {
                         Object constant = readConstant();

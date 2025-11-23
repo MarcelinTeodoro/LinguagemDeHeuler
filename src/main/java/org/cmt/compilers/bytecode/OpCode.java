@@ -34,5 +34,7 @@ public enum OpCode {
     OP_GREATER,
     OP_LESS,
     OP_NOT,
+    OP_TRUE,
+    OP_FALSE,
 
 }

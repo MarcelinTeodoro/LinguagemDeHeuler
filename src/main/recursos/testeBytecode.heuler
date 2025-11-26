@@ -7,3 +7,17 @@ while (i < 3) {
 var a = 10;
 a--;
 print a;
+var limite = 5;
+
+print "Contando de 0 a " + limite + ":";
+
+// Sintaxe: for <variavel> in <expressao_limite>
+for i in limite {
+    // Vamos testar se 'i' é acessível e se incrementa
+    print "Indice: " + i;
+
+    // Vamos testar lógica dentro do for
+    if (i == 2) {
+        print "  -> Meio do caminho!";
+    }
+}

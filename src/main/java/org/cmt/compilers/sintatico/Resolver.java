@@ -95,9 +95,6 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         define(stmt.name);
         return null;
     }
-    @Override public Void visitIfStmt(Stmt.If stmt) { /* ... */ return null; }
-    @Override public Void visitWhileStmt(Stmt.While stmt) { /* ... */ return null; }
-    @Override public Void visitForStmt(Stmt.For stmt) { /* ... */ return null; }
 
     @Override
     public Void visitAssignExpr(Expr.Assign expr) {
@@ -119,20 +116,52 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         resolveLocal(expr, expr.name);
         return null;
     }
+    @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        resolve(stmt.condition); // Resolve a expressão da condição
+        resolve(stmt.thenBranch); // Resolve o código do 'then'
+        if (stmt.elseBranch != null) {
+            resolve(stmt.elseBranch); // Resolve o código do 'else' (se existir)
+        }
+        return null;
+    }
 
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        resolve(stmt.condition); // Resolve a condição do loop
+        resolve(stmt.body);      // Resolve o corpo do loop
+        return null;
+    }
+    @Override
+    public Void visitForStmt(Stmt.For stmt) {
+        resolve(stmt.iterable); // Resolve o limite/lista (ex: o '5' em 'for i in 5')
+
+        // O 'for' cria um escopo implícito para a variável iteradora
+        beginScope();
+
+        // Declaramos e definimos o 'i' para que ele exista dentro do loop
+        declare(stmt.iterator);
+        define(stmt.iterator);
+
+        resolve(stmt.body); // Resolve o corpo, que agora pode ver o 'i'
+
+        endScope();
+        return null;
+    }
     @Override public Void visitBinaryExpr(Expr.Binary expr) { resolve(expr.left); resolve(expr.right); return null; }
     @Override public Void visitGroupingExpr(Expr.Grouping expr) { resolve(expr.expression); return null; }
     @Override public Void visitLiteralExpr(Expr.Literal expr) { return null; } // Literais não fazem nada
     @Override public Void visitLogicalExpr(Expr.Logical expr) { resolve(expr.left); resolve(expr.right); return null; }
     @Override public Void visitUnaryExpr(Expr.Unary expr) { resolve(expr.right); return null; }
 
-    // (Estes podem ficar vazios por enquanto)
     @Override public Void visitCallExpr(Expr.Call expr) { return null; }
     @Override public Void visitGetExpr(Expr.Get expr) { return null; }
     @Override public Void visitSetExpr(Expr.Set expr) { return null; }
     @Override public Void visitSuperExpr(Expr.Super expr) { return null; }
     @Override public Void visitThisExpr(Expr.This expr) { return null; }
     /**
+
+    /*
      * Adiciona a variável ao escopo atual, mas marca-a como "não pronta".
      * Isto permite-nos detetar erros como 'var a = a;'.
      */

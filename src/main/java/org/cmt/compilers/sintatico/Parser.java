@@ -271,8 +271,8 @@ public class Parser {
 
         rules.put(TokenType.Minus, new ParseRule(this::unary, this::binary, Precedence.TERM));
         rules.put(TokenType.Plus,  new ParseRule(null, this::binary, Precedence.TERM));
-        rules.put(TokenType.PlusPlus,   new ParseRule(null, this::increment, Precedence.CALL));
-        rules.put(TokenType.MinusMinus, new ParseRule(null, this::increment, Precedence.CALL));
+        rules.put(TokenType.PlusPlus,   new ParseRule(null, this::increment, Precedence.CALL));//i++
+        rules.put(TokenType.MinusMinus, new ParseRule(null, this::increment, Precedence.CALL));//i--
         rules.put(TokenType.Star,  new ParseRule(null, this::binary, Precedence.FACTOR));
         rules.put(TokenType.Slash, new ParseRule(null, this::binary, Precedence.FACTOR));
         rules.put(TokenType.And, new ParseRule(null, this::logical, Precedence.AND));
